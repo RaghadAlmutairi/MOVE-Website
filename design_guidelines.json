@@ -1,0 +1,179 @@
+{
+  "theme": "dark",
+  "archetype": "Archetype 4: Swiss & High-Contrast (Premium B2B SaaS variant)",
+  "color_system": {
+    "primary": "#4F46E5",
+    "secondary": "#06B6D4",
+    "accent": "#8B5CF6",
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "background": "#0B1020",
+    "surface": "#131A2A",
+    "text_primary": "#F8FAFC",
+    "text_secondary": "#94A3B8",
+    "border": "#1E293B",
+    "gradient_hero": "bg-gradient-to-br from-[#4F46E5]/20 via-[#0B1020] to-[#8B5CF6]/20",
+    "rules": [
+      "Use #0B1020 as the absolute base background.",
+      "Use #131A2A for cards, sidebars, and elevated surfaces.",
+      "Apply 1px subtle borders (#1E293B) to distinguish surfaces rather than heavy shadows.",
+      "CTAs and active states should use the Primary color (#4F46E5).",
+      "Use Accent (#8B5CF6) and Secondary (#06B6D4) sparingly for 'AI Magic' states, confidence scores, and generative text.",
+      "Avoid pure white text; use #F8FAFC to reduce eye strain."
+    ]
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Outfit, sans-serif",
+      "body": "Manrope, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "hierarchy": {
+      "h1": "text-5xl sm:text-6xl font-semibold tracking-tight leading-tight",
+      "h2": "text-3xl sm:text-4xl font-semibold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "h4": "text-lg font-medium",
+      "body": "text-base font-normal leading-relaxed",
+      "small": "text-sm text-slate-400 uppercase tracking-widest"
+    },
+    "rules": [
+      "DO NOT USE Inter or Roboto.",
+      "Use Outfit for all headings to provide a modern, geometric, tech-forward feel.",
+      "Use Manrope for body copy for excellent legibility at small sizes.",
+      "Apply tight letter spacing (tracking-tight) on headings H1 and H2.",
+      "Ensure text contrast meets APCA/WCAG standards against the dark background."
+    ]
+  },
+  "spacing_and_layout": {
+    "generous_spacing": true,
+    "scale": [
+      "p-4",
+      "p-6",
+      "p-8",
+      "p-12",
+      "p-16",
+      "p-24",
+      "p-32"
+    ],
+    "grids": {
+      "bento_marketing": "grid-cols-1 md:grid-cols-12 gap-6 or gap-8",
+      "dashboard_dense": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 or gap-6"
+    },
+    "rules": [
+      "Containers with borders must use internal padding (p-6 or p-8) to avoid text collision.",
+      "Use The Control Room Grid for dashboards: tight gaps, full height cards.",
+      "Use The Tetris Grid for marketing/landing: varied column spans to create asymmetry."
+    ]
+  },
+  "components": {
+    "libraries": [
+      "Shadcn UI (heavily customized for Dark Theme)",
+      "Recharts (for dashboard analytics)",
+      "Lucide React (icons)",
+      "Framer Motion (for micro-interactions)"
+    ],
+    "styles": {
+      "buttons": {
+        "primary": "bg-[#4F46E5] text-white hover:bg-[#4338CA] rounded-md px-6 py-2 transition-colors",
+        "secondary": "bg-transparent border border-[#1E293B] text-[#F8FAFC] hover:bg-[#131A2A] rounded-md px-6 py-2 transition-colors",
+        "ghost": "hover:bg-[#131A2A] text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
+      },
+      "cards": {
+        "base": "bg-[#131A2A] border border-[#1E293B] rounded-xl overflow-hidden",
+        "hover": "hover:border-[#4F46E5]/50 transition-colors duration-300",
+        "glass": "backdrop-blur-xl bg-[#131A2A]/80 border border-[#1E293B]"
+      },
+      "inputs": {
+        "base": "bg-[#0B1020] border border-[#1E293B] text-[#F8FAFC] rounded-md focus:ring-2 focus:ring-[#4F46E5]/50 focus:border-[#4F46E5]"
+      },
+      "ai_elements": {
+        "generative_text": "bg-clip-text text-transparent bg-gradient-to-r from-[#06B6D4] to-[#8B5CF6]",
+        "glow": "shadow-[0_0_15px_rgba(139,92,246,0.3)]"
+      }
+    },
+    "rules": [
+      "Avoid deeply rounded corners; stick to rounded-md or rounded-xl for a structural, premium B2B feel.",
+      "All interactive elements MUST have data-testid attributes.",
+      "Always set explicit text color on hover."
+    ]
+  },
+  "pages": {
+    "landing": {
+      "type": "Marketing",
+      "features": ["Hero Section", "Features Overview", "How It Works", "Testimonials", "FAQ"],
+      "layout": "Asymmetric Bento Grid, generous vertical spacing (py-24).",
+      "visuals": "Hero with dark gradient overlay, abstract background. AI generative text glow."
+    },
+    "company_research": {
+      "type": "Dashboard",
+      "features": ["3-panel layout", "KPIs", "Competitor Cards", "Market Signals"],
+      "layout": "Dense Control Room Grid (gap-6).",
+      "visuals": "Flat surfaces, subtle borders. High contrast data points."
+    },
+    "gtm_ideation": {
+      "type": "App",
+      "features": ["AI recommended cards with confidence scores (92/87/84/79)"],
+      "layout": "Responsive Grid, card-heavy.",
+      "visuals": "Highlight confidence scores using Accent and Success colors based on value."
+    },
+    "command_center": {
+      "type": "Dashboard",
+      "features": ["Sidebar nav", "Executive summary", "ICP", "Messaging", "Charts", "Roadmap", "AI Copilot panel"],
+      "layout": "Multi-column layout with fixed Sidebar and fixed Right Panel (AI Copilot).",
+      "visuals": "Most impressive page. Use Recharts for channel allocation. Glassmorphism on AI Copilot panel."
+    },
+    "content_export": {
+      "type": "App",
+      "features": ["Tabs: Social Content, Strategy Files, Master Package"],
+      "layout": "Clean, list-based and grid-based views depending on tab.",
+      "visuals": "Prominent file icons, structured data tables."
+    }
+  },
+  "global_elements": {
+    "ai_assistant": "Persistent floating button or side panel, stylized with gradient borders.",
+    "navigation": "Sticky glassmorphic top nav on marketing; Solid vertical sidebar on dashboard.",
+    "theme_toggle": "Should support dark/light, but default/primary is dark mode.",
+    "other": ["Notification Center", "Workspace Switcher", "Breadcrumbs", "Keyboard Shortcuts (Cmd+K)"]
+  },
+  "media": {
+    "image_urls": {
+      "hero_background": {
+        "url": "https://images.unsplash.com/photo-1645724298070-c30a506ec96f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzB8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGdyYWRpZW50JTIwZGFyayUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzgxMTk3Mjc5fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Dark blue abstract gradient, perfect for blending into the #0B1020 background behind hero text."
+      },
+      "feature_abstract": {
+        "url": "https://images.unsplash.com/photo-1687804446680-d90cf8c60713?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzB8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMGdyYWRpZW50JTIwZGFyayUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzgxMTk3Mjc5fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Purple/pink curve abstract gradient for 'AI Features' sections."
+      },
+      "dashboard_mockup": {
+        "url": "https://images.pexels.com/photos/30530414/pexels-photo-30530414.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Dark mode digital assistant interface for marketing visual context."
+      },
+      "team_meeting": {
+        "url": "https://images.pexels.com/photos/8463151/pexels-photo-8463151.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Professional team meeting for 'About' or 'Who is it for' sections."
+      },
+      "logo_1": {
+        "url": "https://images.unsplash.com/photo-1705988142466-e468bc654eeb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwxfHxjb21wYW55JTIwbG9nbyUyMHdoaXRlJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODExOTcyNzl8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract logo shape to use for partner/trusted-by sections."
+      },
+      "logo_2": {
+        "url": "https://images.pexels.com/photos/26576975/pexels-photo-26576975.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Minimalist logo for partner/trusted-by sections."
+      }
+    },
+    "rules": [
+      "Images used in hero sections MUST use a gradient overlay to ensure text contrast (e.g., bg-black/50 or from-black/80 to-transparent).",
+      "Do NOT use placeholder text or dummy image URLs. Use the exact URLs provided."
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install required dependencies: lucide-react, recharts, framer-motion, clsx, tailwind-merge.",
+    "Add 'Outfit' and 'Manrope' fonts from Google Fonts in the HTML head and configure them in tailwind.config.js.",
+    "Ensure all 5 pages are distinct and fully implemented based on the problem statement.",
+    "Build the 'Command Center' (Page 4) as the hero dashboard with highest visual polish.",
+    "Apply data-testid to every button, tab, and form input.",
+    "Never use generic fonts like Inter/Roboto.",
+    "Strictly adhere to the dark mode #0B1020 background and #131A2A surface colors."
+  ]
+}
