@@ -31,8 +31,8 @@ const CATEGORIES = [
   { id: "linkedin", label: "LinkedIn Posts", icon: Linkedin, color: "#0A66C2", items: SOCIAL_CONTENT.linkedin },
   { id: "x", label: "X Posts", icon: Twitter, color: "#1DA1F2", items: SOCIAL_CONTENT.x },
   { id: "instagram", label: "Instagram", icon: Instagram, color: "#E1306C", items: SOCIAL_CONTENT.instagram },
-  { id: "email", label: "Email", icon: Mail, color: "#4F46E5", items: SOCIAL_CONTENT.email },
-  { id: "blog", label: "Blog", icon: FileText, color: "#8B5CF6", items: SOCIAL_CONTENT.blog },
+  { id: "email", label: "Email", icon: Mail, color: "#A855F7", items: SOCIAL_CONTENT.email },
+  { id: "blog", label: "Blog", icon: FileText, color: "#E879F9", items: SOCIAL_CONTENT.blog },
   { id: "ads", label: "Ad Copy", icon: Megaphone, color: "#F59E0B", items: SOCIAL_CONTENT.ads },
 ];
 
@@ -101,7 +101,7 @@ export default function ContentStudio() {
                           : "text-ink-muted hover:text-ink-text hover:bg-ink-elevated"
                       }`}
                     >
-                      <c.icon className="w-4 h-4" style={{ color: category === c.id ? "#4F46E5" : c.color }} />
+                      <c.icon className="w-4 h-4" style={{ color: category === c.id ? "#A855F7" : c.color }} />
                       <span className="flex-1 text-left">{c.label}</span>
                       <Badge variant="outline" className="border-ink-border text-ink-muted text-[10px] px-1.5 py-0">
                         {c.items.length}
@@ -170,7 +170,7 @@ export default function ContentStudio() {
                       <Button variant="ghost" size="sm" data-testid={`preview-${f.name}`} className="text-ink-muted hover:text-ink-text hover:bg-ink-elevated">
                         <Eye className="w-3.5 h-3.5 mr-1.5" /> Preview
                       </Button>
-                      <Button onClick={() => handleDownload(f.name)} data-testid={`dl-${f.name}`} className="bg-brand-primary hover:bg-[#4338CA] text-white">
+                      <Button onClick={() => handleDownload(f.name)} data-testid={`dl-${f.name}`} className="bg-brand-primary hover:bg-[#9333EA] text-white">
                         <Download className="w-3.5 h-3.5 mr-1.5" /> Download
                       </Button>
                     </div>
@@ -186,7 +186,7 @@ export default function ContentStudio() {
               <div className="absolute inset-0 grid-bg opacity-30" />
               <div
                 className="absolute -top-32 -right-32 w-96 h-96 rounded-full blur-[120px] opacity-40 pointer-events-none"
-                style={{ background: "radial-gradient(circle, #8B5CF6 0%, transparent 60%)" }}
+                style={{ background: "radial-gradient(circle, #E879F9 0%, transparent 60%)" }}
               />
               <div className="relative grid md:grid-cols-2 gap-8 items-center">
                 <div>
@@ -213,7 +213,7 @@ export default function ContentStudio() {
                       </li>
                     ))}
                   </ul>
-                  <Button onClick={() => handleDownload("GTM_Master_Package.zip")} data-testid="master-download" size="lg" className="mt-7 bg-brand-primary hover:bg-[#4338CA] text-white shadow-xl shadow-brand-primary/40 px-7 py-6 text-base">
+                  <Button onClick={() => handleDownload("GTM_Master_Package.zip")} data-testid="master-download" size="lg" className="mt-7 bg-brand-primary hover:bg-[#9333EA] text-white shadow-xl shadow-brand-primary/40 px-7 py-6 text-base">
                     <Archive className="mr-2 w-4 h-4" /> Download Master ZIP (38.4 MB)
                   </Button>
                 </div>
@@ -233,9 +233,9 @@ export default function ContentStudio() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
               {[
-                { label: "ZIP Package", value: "38.4 MB", icon: Archive, color: "#4F46E5" },
-                { label: "All Assets", value: "47 files", icon: FileText, color: "#06B6D4" },
-                { label: "All Content", value: "18 posts", icon: Megaphone, color: "#8B5CF6" },
+                { label: "ZIP Package", value: "38.4 MB", icon: Archive, color: "#A855F7" },
+                { label: "All Assets", value: "47 files", icon: FileText, color: "#22D3EE" },
+                { label: "All Content", value: "18 posts", icon: Megaphone, color: "#E879F9" },
               ].map((s) => (
                 <div key={s.label} className="rounded-xl border border-ink-border bg-ink-surface p-5 flex items-center gap-3">
                   <div className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${s.color}20`, color: s.color }}>

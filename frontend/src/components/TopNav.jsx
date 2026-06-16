@@ -34,13 +34,11 @@ export default function TopNav({ variant = "app" }) {
     >
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 h-16 flex items-center gap-6">
         <Link to="/" data-testid="nav-logo" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-primary via-brand-accent to-brand-secondary flex items-center justify-center font-heading font-bold text-white text-sm shadow-lg shadow-brand-primary/30">
-            M
-          </div>
-          <div className="flex flex-col leading-none">
-            <span className="font-heading font-semibold text-ink-text tracking-tight">MOVE</span>
-            <span className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">Beamdata GTM AI</span>
-          </div>
+          <img
+            src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/9jdueuty_ChatGPT%20Image%20Jun%2016%2C%202026%2C%2009_48_17%20AM.png"
+            alt="MOVE"
+            className="h-9 w-auto object-contain"
+          />
         </Link>
 
         {variant === "app" && (
@@ -163,7 +161,7 @@ export default function TopNav({ variant = "app" }) {
               <Link to="/research">
                 <Button
                   data-testid="marketing-cta"
-                  className="bg-brand-primary hover:bg-[#4338CA] text-white shadow-lg shadow-brand-primary/30"
+                  className="bg-brand-primary hover:bg-[#9333EA] text-white shadow-lg shadow-brand-primary/30"
                 >
                   <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                   Start free

@@ -209,10 +209,10 @@ export default function CommandCenter() {
                     <PieChart>
                       <Pie data={STRATEGY.channels} dataKey="value" nameKey="name" innerRadius={50} outerRadius={88} paddingAngle={3}>
                         {STRATEGY.channels.map((c) => (
-                          <Cell key={c.name} fill={c.color} stroke="#0B1020" strokeWidth={2} />
+                          <Cell key={c.name} fill={c.color} stroke="#0A0613" strokeWidth={2} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{ background: "#131A2A", border: "1px solid #1E293B", borderRadius: 8, fontSize: 12, color: "#F8FAFC" }} />
+                      <Tooltip contentStyle={{ background: "#15101F", border: "1px solid #2A1F3D", borderRadius: 8, fontSize: 12, color: "#F8FAFC" }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -282,13 +282,13 @@ export default function CommandCenter() {
                       { m: "M5", pipeline: 7.6, revenue: 1.9 },
                       { m: "M6", pipeline: 9.8, revenue: 2.6 },
                     ]}>
-                      <CartesianGrid stroke="#1E293B" strokeDasharray="3 3" />
-                      <XAxis dataKey="m" stroke="#94A3B8" fontSize={11} />
-                      <YAxis stroke="#94A3B8" fontSize={11} />
-                      <Tooltip contentStyle={{ background: "#131A2A", border: "1px solid #1E293B", borderRadius: 8, fontSize: 12 }} />
+                      <CartesianGrid stroke="#2A1F3D" strokeDasharray="3 3" />
+                      <XAxis dataKey="m" stroke="#A89FB8" fontSize={11} />
+                      <YAxis stroke="#A89FB8" fontSize={11} />
+                      <Tooltip contentStyle={{ background: "#15101F", border: "1px solid #2A1F3D", borderRadius: 8, fontSize: 12 }} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="pipeline" fill="#4F46E5" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="revenue" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="pipeline" fill="#A855F7" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="revenue" fill="#E879F9" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -440,7 +440,7 @@ function CopilotPanel() {
           placeholder="Ask the copilot..."
           className="bg-ink-bg border-ink-border text-ink-text text-xs h-9 focus-visible:ring-brand-primary/40"
         />
-        <Button data-testid="cc-copilot-send" onClick={() => send()} size="sm" className="bg-brand-primary hover:bg-[#4338CA] text-white h-9 px-2.5">
+        <Button data-testid="cc-copilot-send" onClick={() => send()} size="sm" className="bg-brand-primary hover:bg-[#9333EA] text-white h-9 px-2.5">
           <Send className="w-3.5 h-3.5" />
         </Button>
       </div>

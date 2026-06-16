@@ -3,16 +3,12 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   PlayCircle,
-  Sparkles,
   Search,
   Target,
   TrendingUp,
   LayoutPanelTop,
   PenSquare,
   Download,
-  Star,
-  CheckCircle2,
-  ShieldCheck,
   Brain,
   Zap,
 } from "lucide-react";
@@ -22,7 +18,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 
 const FEATURES = [
-  { icon: Search, title: "AI Research Engine", desc: "Map any company in 38 seconds — products, ICP, value props, and signal feeds." },
+  { icon: Search, title: "AI Research Engine", desc: "Map any company in one pass — products, ICP, value props, and signal feeds." },
   { icon: Target, title: "Competitor Discovery", desc: "Surface direct, adjacent and emerging competitors with funding & strength scoring." },
   { icon: TrendingUp, title: "Market Trends", desc: "Search, mention, and capital momentum visualized in real-time charts." },
   { icon: LayoutPanelTop, title: "GTM Strategy Builder", desc: "From positioning to channel mix to a 30/60/90 plan — fully editable." },
@@ -34,24 +30,14 @@ const STEPS = [
   { n: "01", t: "Drop a company", d: "Paste a URL. We crawl, parse, and structure everything." },
   { n: "02", t: "Choose a strategy", d: "AI proposes 4 GTM motions with confidence and ROI." },
   { n: "03", t: "Refine in the command center", d: "Edit ICP, positioning, channels, and roadmap with the copilot." },
-  { n: "04", t: "Export & launch", d: "Ship campaign-ready content, decks and timelines in minutes." },
-];
-
-const TESTIMONIALS = [
-  { name: "Sarah Kowalski", role: "VP RevOps, Linear", quote: "Cut our GTM planning from 6 weeks to a single afternoon. The copilot is like a senior strategist on demand." },
-  { name: "Marcus Chen", role: "Head of Growth, Vercel", quote: "We've built three product-launch strategies in MOVE. The differentiator analysis alone is worth the price." },
-  { name: "Priya Anand", role: "CMO, Helix Health", quote: "Finally a tool that gives my CEO and my SDRs the same source of truth. The exports are board-grade." },
+  { n: "04", t: "Export & launch", d: "Ship campaign-ready content, decks and timelines from a single bundle." },
 ];
 
 const FAQ = [
-  { q: "How does MOVE generate strategies?", a: "MOVE combines first-party research (crawling, signal aggregation) with a frontier reasoning model trained on 12,000+ B2B GTM playbooks. Every recommendation is explained — no black box." },
+  { q: "How does MOVE generate strategies?", a: "MOVE combines first-party research (crawling, signal aggregation) with a frontier reasoning model coordinated across multiple agents. Every recommendation is explained — no black box." },
   { q: "Can I use my own brand voice?", a: "Yes. Upload sample posts, decks, or emails and the copilot will mirror your tone, vocabulary and cadence across all generated content." },
-  { q: "What integrations do you support?", a: "Native integrations with HubSpot, Salesforce, Linear, Slack, Notion, LinkedIn Campaign Manager, Google Ads, and 30+ more. CSV and Zapier supported." },
-  { q: "Is my data private?", a: "Workspaces are isolated. SOC 2 Type II, GDPR, HIPAA-ready. We never train on your data and offer EU-only data residency." },
-  { q: "What does it cost?", a: "Starter (free) for individuals, Team ($79/seat/mo), Business ($249/seat/mo), Enterprise with custom SSO and data residency." },
 ];
 
-const LOGOS = ["Linear", "Vercel", "Loom", "Ramp", "Notion", "Cursor", "Replicate"];
 
 export default function Landing() {
   return (
@@ -63,11 +49,11 @@ export default function Landing() {
         <div className="absolute inset-0 grid-bg opacity-50" />
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] rounded-full blur-[140px] opacity-40 pointer-events-none"
-          style={{ background: "radial-gradient(circle, #4F46E5 0%, transparent 60%)" }}
+          style={{ background: "radial-gradient(circle, #A855F7 0%, transparent 60%)" }}
         />
         <div
           className="absolute top-40 right-0 w-[600px] h-[600px] rounded-full blur-[160px] opacity-30 pointer-events-none"
-          style={{ background: "radial-gradient(circle, #8B5CF6 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, #E879F9 0%, transparent 70%)" }}
         />
 
         <div className="relative max-w-6xl mx-auto text-center">
@@ -78,7 +64,7 @@ export default function Landing() {
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-xs text-ink-muted mb-6"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-brand-success animate-pulse" />
-            Beamdata MOVE 2.0 · Now with agentic reasoning
+            Multi-Agent GTM Intelligence
           </motion.div>
 
           <motion.h1
@@ -98,7 +84,7 @@ export default function Landing() {
             transition={{ duration: 0.7, delay: 0.15 }}
             className="mt-6 text-lg sm:text-xl text-ink-muted max-w-2xl mx-auto leading-relaxed"
           >
-            Research your market, discover competitors, generate GTM plans, and create campaign-ready content — in minutes, not months.
+            Research your market, discover competitors, generate GTM plans, and create campaign-ready content — all from a single agentic workspace.
           </motion.p>
 
           <motion.div
@@ -111,7 +97,7 @@ export default function Landing() {
               <Button
                 data-testid="hero-primary-cta"
                 size="lg"
-                className="bg-brand-primary hover:bg-[#4338CA] text-white px-7 py-6 text-base shadow-xl shadow-brand-primary/40"
+                className="bg-brand-primary hover:bg-[#9333EA] text-white px-7 py-6 text-base shadow-xl shadow-brand-primary/40"
               >
                 Start Your GTM Strategy
                 <ArrowRight className="ml-2 w-4 h-4" />
@@ -127,27 +113,9 @@ export default function Landing() {
               Watch Demo
             </Button>
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.5 }}
-            className="mt-20"
-          >
-            <div className="text-[11px] uppercase tracking-[0.2em] text-ink-muted mb-5">
-              Trusted by GTM teams at
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70">
-              {LOGOS.map((l) => (
-                <span key={l} className="font-heading font-medium text-ink-muted hover:text-ink-text transition-colors">
-                  {l}
-                </span>
-              ))}
-            </div>
-          </motion.div>
         </div>
 
-        {/* Hero product preview */}
+          {/* Hero product preview */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -163,7 +131,7 @@ export default function Landing() {
                 <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
                 <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
               </div>
-              <span className="ml-3 text-xs text-ink-muted font-mono">move.beamdata.ai/command-center</span>
+              <span className="ml-3 text-xs text-ink-muted font-mono">move · command-center</span>
             </div>
             <div className="grid grid-cols-12 gap-4 p-6">
               <div className="col-span-3 space-y-2">
@@ -249,22 +217,18 @@ export default function Landing() {
       <section className="px-6 lg:px-10 py-24 border-t border-ink-border">
         <div className="max-w-6xl mx-auto space-y-24">
           {[
-            { icon: Brain, label: "AI Research Engine", title: "Know any company in 38 seconds", desc: "MOVE crawls 90+ sources — websites, filings, podcasts, hiring data — and reconstructs the full GTM picture: products, ICP, value props, pricing posture, and emerging risks." },
-            { icon: Target, label: "Competitor Discovery", title: "Map the battlefield before you step on it", desc: "Surface direct, adjacent and emerging competitors with funding, momentum, strengths and weaknesses. Build positioning matrices in one click." },
+            { icon: Brain, label: "AI Research Engine", title: "Know any company at a deeper level", desc: "MOVE crawls public sources — websites, filings, podcasts, hiring data — and reconstructs the full GTM picture: products, ICP, value props, pricing posture, and emerging risks." },
+            { icon: Target, label: "Competitor Discovery", title: "Map the battlefield before you step on it", desc: "Surface direct, adjacent and emerging competitors with funding context, momentum signals, strengths and weaknesses. Build positioning matrices in one click." },
             { icon: TrendingUp, label: "Market Trends", title: "Spot signals before your competitors do", desc: "Search momentum, social mentions, and capital flow — visualized as trend lines, anomaly alerts and opportunity scores." },
             { icon: LayoutPanelTop, label: "GTM Strategy Builder", title: "Boardroom-grade strategy, not a Notion doc", desc: "ICP, positioning, messaging, channel mix, and a 30/60/90 plan — every section editable, justified, and exportable." },
             { icon: PenSquare, label: "AI Content Generator", title: "Campaign-ready, in your voice", desc: "LinkedIn manifestos, X threads, email sequences, search ads, blog posts. On-brand, optimized for each surface." },
-            { icon: Download, label: "Export Center", title: "Boardroom decks, calendars and budgets — instantly", desc: "PDF strategy doc, PPTX deck, XLSX budget, ICS calendar. One-click ZIP for the full package." },
+            { icon: Download, label: "Export Center", title: "Boardroom decks, calendars and budgets — all in one bundle", desc: "PDF strategy doc, PPTX deck, XLSX budget, ICS calendar. One-click ZIP for the full package." },
           ].map((b, i) => (
             <div key={b.label} className={`grid md:grid-cols-12 gap-10 items-center ${i % 2 ? "md:[&>*:first-child]:order-2" : ""}`}>
               <div className="md:col-span-6">
                 <div className="text-[11px] uppercase tracking-[0.2em] text-brand-primary mb-2">{b.label}</div>
                 <h3 className="font-heading text-3xl sm:text-4xl font-semibold tracking-tight mb-4">{b.title}</h3>
                 <p className="text-ink-muted leading-relaxed text-base">{b.desc}</p>
-                <div className="mt-6 flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-brand-success" />
-                  <span className="text-ink-muted">Available in every plan</span>
-                </div>
               </div>
               <div className="md:col-span-6">
                 <div className="relative rounded-2xl border border-ink-border bg-gradient-to-br from-ink-surface to-ink-bg p-8 h-64 flex items-center justify-center overflow-hidden">
@@ -275,32 +239,6 @@ export default function Landing() {
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="px-6 lg:px-10 py-24 border-t border-ink-border bg-ink-surface/30">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-brand-secondary mb-3">Customers</div>
-            <h2 className="font-heading text-4xl sm:text-5xl font-semibold tracking-tight">Loved by ambitious operators</h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-5">
-            {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="rounded-xl border border-ink-border bg-ink-bg p-7">
-                <div className="flex gap-0.5 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-brand-warning text-brand-warning" />
-                  ))}
-                </div>
-                <p className="text-ink-text text-base leading-relaxed mb-5">"{t.quote}"</p>
-                <div className="text-sm">
-                  <div className="font-medium text-ink-text">{t.name}</div>
-                  <div className="text-ink-muted">{t.role}</div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -328,39 +266,36 @@ export default function Landing() {
       <section className="px-6 lg:px-10 py-24 border-t border-ink-border relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-40 pointer-events-none"
-          style={{ background: "radial-gradient(circle at 50% 50%, rgba(79,70,229,0.4) 0%, transparent 60%)" }}
+          style={{ background: "radial-gradient(circle at 50% 50%, rgba(168,85,247,0.4) 0%, transparent 60%)" }}
         />
         <div className="relative max-w-3xl mx-auto text-center">
           <Badge variant="outline" className="border-brand-primary/40 text-brand-primary bg-brand-primary/10 mb-5">
-            <Zap className="w-3 h-3 mr-1" /> 14-day free pilot
+            <Zap className="w-3 h-3 mr-1" /> Try the workspace
           </Badge>
           <h2 className="font-heading text-4xl sm:text-5xl font-semibold tracking-tight">Stop planning. Start moving.</h2>
-          <p className="mt-4 text-ink-muted text-lg">Your next GTM is 12 minutes away.</p>
+          <p className="mt-4 text-ink-muted text-lg">Build your next GTM with a multi-agent intelligence stack.</p>
           <Link to="/research">
             <Button
               data-testid="final-cta"
               size="lg"
-              className="mt-8 bg-brand-primary hover:bg-[#4338CA] text-white px-7 py-6 text-base shadow-xl shadow-brand-primary/40"
+              className="mt-8 bg-brand-primary hover:bg-[#9333EA] text-white px-7 py-6 text-base shadow-xl shadow-brand-primary/40"
             >
               Start Your GTM Strategy
               <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </Link>
-          <div className="mt-6 text-xs text-ink-muted flex items-center justify-center gap-4">
-            <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> SOC 2 Type II</span>
-            <span>·</span>
-            <span>No credit card</span>
-            <span>·</span>
-            <span>Cancel anytime</span>
-          </div>
         </div>
       </section>
 
       <footer className="border-t border-ink-border px-6 lg:px-10 py-10">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-muted">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center text-white font-heading text-[10px] font-bold">M</div>
-            MOVE · Beamdata GTM AI · © 2026
+            <img
+              src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/9jdueuty_ChatGPT%20Image%20Jun%2016%2C%202026%2C%2009_48_17%20AM.png"
+              alt="MOVE"
+              className="h-7 w-auto object-contain"
+            />
+            <span>© 2026</span>
           </div>
           <div className="flex items-center gap-5">
             <a href="#" onClick={(e)=>e.preventDefault()} className="hover:text-ink-text transition-colors">Privacy</a>

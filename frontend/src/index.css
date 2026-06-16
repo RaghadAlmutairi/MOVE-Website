@@ -4,7 +4,7 @@
 
 html, body {
     margin: 0;
-    background-color: #0B1020;
+    background-color: #0A0613;
     color: #F8FAFC;
     font-family: 'Manrope', sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -12,34 +12,34 @@ html, body {
 }
 
 ::selection {
-    background: rgba(79, 70, 229, 0.4);
+    background: rgba(168, 85, 247, 0.4);
     color: #F8FAFC;
 }
 
 @layer base {
     :root {
-        --background: 226 47% 8%;
+        --background: 263 47% 6%;
         --foreground: 210 40% 98%;
-        --card: 222 32% 12%;
+        --card: 263 30% 11%;
         --card-foreground: 210 40% 98%;
-        --popover: 222 32% 12%;
+        --popover: 263 30% 11%;
         --popover-foreground: 210 40% 98%;
-        --primary: 243 75% 59%;
+        --primary: 271 91% 65%;
         --primary-foreground: 0 0% 100%;
-        --secondary: 222 32% 16%;
+        --secondary: 263 30% 15%;
         --secondary-foreground: 210 40% 98%;
-        --muted: 222 32% 16%;
+        --muted: 263 30% 15%;
         --muted-foreground: 215 20% 65%;
-        --accent: 263 79% 67%;
+        --accent: 292 84% 73%;
         --accent-foreground: 0 0% 100%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;
-        --border: 217 33% 18%;
-        --input: 217 33% 18%;
-        --ring: 243 75% 59%;
-        --chart-1: 243 75% 59%;
-        --chart-2: 187 92% 43%;
-        --chart-3: 263 79% 67%;
+        --border: 263 25% 18%;
+        --input: 263 25% 18%;
+        --ring: 271 91% 65%;
+        --chart-1: 271 91% 65%;
+        --chart-2: 187 95% 55%;
+        --chart-3: 292 84% 73%;
         --chart-4: 158 64% 39%;
         --chart-5: 38 92% 50%;
         --radius: 0.75rem;
@@ -54,7 +54,7 @@ html, body {
 
 @layer utilities {
     .text-gradient-ai {
-        background: linear-gradient(90deg, #06B6D4 0%, #8B5CF6 50%, #4F46E5 100%);
+        background: linear-gradient(90deg, #22D3EE 0%, #E879F9 50%, #A855F7 100%);
         background-size: 200% 100%;
         -webkit-background-clip: text;
         background-clip: text;
@@ -67,12 +67,12 @@ html, body {
         -webkit-backdrop-filter: blur(18px);
         border: 1px solid rgba(30, 41, 59, 0.8);
     }
-    .glow-primary { box-shadow: 0 0 32px -4px rgba(79, 70, 229, 0.35); }
-    .glow-accent { box-shadow: 0 0 28px -6px rgba(139, 92, 246, 0.45); }
+    .glow-primary { box-shadow: 0 0 32px -4px rgba(168, 85, 247, 0.35); }
+    .glow-accent { box-shadow: 0 0 28px -6px rgba(232, 121, 249, 0.45); }
     .grid-bg {
         background-image:
-            linear-gradient(rgba(79, 70, 229, 0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(79, 70, 229, 0.06) 1px, transparent 1px);
+            linear-gradient(rgba(168, 85, 247, 0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(168, 85, 247, 0.06) 1px, transparent 1px);
         background-size: 56px 56px;
     }
     .noise::before {
@@ -85,8 +85,8 @@ html, body {
     }
     .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
     .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-    .scrollbar-thin::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 8px; }
-    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #4F46E5; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #2A1F3D; border-radius: 8px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #A855F7; }
 }
 
 [data-debug-wrapper="true"] { display: contents !important; }

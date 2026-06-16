@@ -125,7 +125,7 @@ export default function AICopilotDock() {
                   placeholder="Ask the copilot anything..."
                   className="bg-ink-bg border-ink-border text-ink-text placeholder:text-ink-muted/60 focus-visible:ring-brand-primary/40"
                 />
-                <Button onClick={() => send()} data-testid="copilot-send" className="bg-brand-primary hover:bg-[#4338CA] text-white">
+                <Button onClick={() => send()} data-testid="copilot-send" className="bg-brand-primary hover:bg-[#9333EA] text-white">
                   <Send className="w-4 h-4" />
                 </Button>
               </div>

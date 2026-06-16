@@ -85,7 +85,7 @@ export default function StrategyIdeation() {
                 <div className="mt-5 flex items-center gap-4">
                   <div className="relative">
                     <svg className="w-16 h-16 -rotate-90">
-                      <circle cx="32" cy="32" r="26" stroke="#1E293B" strokeWidth="5" fill="none" />
+                      <circle cx="32" cy="32" r="26" stroke="#2A1F3D" strokeWidth="5" fill="none" />
                       <circle
                         cx="32"
                         cy="32"
@@ -98,8 +98,8 @@ export default function StrategyIdeation() {
                       />
                       <defs>
                         <linearGradient id="grad-conf" x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor="#4F46E5" />
-                          <stop offset="100%" stopColor="#8B5CF6" />
+                          <stop offset="0%" stopColor="#A855F7" />
+                          <stop offset="100%" stopColor="#E879F9" />
                         </linearGradient>
                       </defs>
                     </svg>
@@ -166,14 +166,14 @@ export default function StrategyIdeation() {
             </div>
             <div>
               <div className="font-medium text-ink-text">Selected: {GTM_RECOMMENDATIONS.find(r => r.id === selected)?.title}</div>
-              <div className="text-xs text-ink-muted">We'll build the full command center from this foundation.</div>
+              <div className="text-xs text-ink-muted">We&apos;ll build the full command center from this foundation.</div>
             </div>
           </div>
           <Button
             onClick={() => navigate("/command-center")}
             data-testid="continue-to-command-center"
             size="lg"
-            className="bg-brand-primary hover:bg-[#4338CA] text-white shadow-xl shadow-brand-primary/30"
+            className="bg-brand-primary hover:bg-[#9333EA] text-white shadow-xl shadow-brand-primary/30"
           >
             Build Command Center <ArrowRight className="ml-2 w-4 h-4" />
           </Button>

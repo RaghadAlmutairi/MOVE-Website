@@ -143,9 +143,9 @@ export const STRATEGY = {
       "{firstName} — saw your post about RevOps consolidation. 100%. We just helped Linear collapse Outreach + Apollo + Clay into one canvas. 4.2x faster meetings, $180k/yr saved. Open to a 14-day pilot? No deck, just a working workflow.",
   },
   channels: [
-    { name: "LinkedIn", value: 28, color: "#4F46E5" },
-    { name: "SEO + Content", value: 18, color: "#06B6D4" },
-    { name: "Email Outbound", value: 16, color: "#8B5CF6" },
+    { name: "LinkedIn", value: 28, color: "#A855F7" },
+    { name: "SEO + Content", value: 18, color: "#22D3EE" },
+    { name: "Email Outbound", value: 16, color: "#E879F9" },
     { name: "Partnerships", value: 14, color: "#10B981" },
     { name: "Events", value: 12, color: "#F59E0B" },
     { name: "Paid Ads", value: 8, color: "#EC4899" },
@@ -302,5 +302,5 @@ export const STRATEGY_FILES = [
   { name: "GTM_Strategy.pdf", size: "4.2 MB", icon: "FileText", color: "#EF4444" },
   { name: "GTM_Presentation.pptx", size: "12.8 MB", icon: "Presentation", color: "#F97316" },
   { name: "GTM_Budget.xlsx", size: "286 KB", icon: "FileSpreadsheet", color: "#10B981" },
-  { name: "GTM_Calendar.ics", size: "18 KB", icon: "Calendar", color: "#4F46E5" },
+  { name: "GTM_Calendar.ics", size: "18 KB", icon: "Calendar", color: "#A855F7" },
 ];

@@ -91,7 +91,7 @@ export default function CompanyResearch() {
                 onClick={analyze}
                 disabled={loading}
                 data-testid="research-analyze-btn"
-                className="w-full bg-brand-primary hover:bg-[#4338CA] text-white shadow-lg shadow-brand-primary/30"
+                className="w-full bg-brand-primary hover:bg-[#9333EA] text-white shadow-lg shadow-brand-primary/30"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-1.5" />Analyze</>}
               </Button>
@@ -228,9 +228,9 @@ export default function CompanyResearch() {
                       <div className="absolute top-1/2 right-2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-ink-muted rotate-90 origin-right">Broad</div>
                     </div>
                     {[
-                      { x: 70, y: 24, l: "Northwind", c: "#4F46E5", size: 14 },
-                      { x: 56, y: 38, l: "Clay", c: "#06B6D4", size: 11 },
-                      { x: 78, y: 56, l: "Apollo", c: "#8B5CF6", size: 12 },
+                      { x: 70, y: 24, l: "Northwind", c: "#A855F7", size: 14 },
+                      { x: 56, y: 38, l: "Clay", c: "#22D3EE", size: 11 },
+                      { x: 78, y: 56, l: "Apollo", c: "#E879F9", size: 12 },
                       { x: 32, y: 70, l: "Outreach", c: "#F59E0B", size: 10 },
                       { x: 26, y: 50, l: "Salesloft", c: "#10B981", size: 9 },
                       { x: 18, y: 30, l: "C-Room", c: "#EC4899", size: 8 },
@@ -264,13 +264,13 @@ export default function CompanyResearch() {
                       <AreaChart data={TREND_DATA}>
                         <defs>
                           <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#4F46E5" stopOpacity={0.45} />
-                            <stop offset="100%" stopColor="#4F46E5" stopOpacity={0} />
+                            <stop offset="0%" stopColor="#A855F7" stopOpacity={0.45} />
+                            <stop offset="100%" stopColor="#A855F7" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <Area type="monotone" dataKey="search" stroke="#4F46E5" strokeWidth={2} fill="url(#g1)" />
-                        <Tooltip contentStyle={{ background: "#131A2A", border: "1px solid #1E293B", borderRadius: 8, fontSize: 12 }} />
-                        <XAxis dataKey="month" stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                        <Area type="monotone" dataKey="search" stroke="#A855F7" strokeWidth={2} fill="url(#g1)" />
+                        <Tooltip contentStyle={{ background: "#15101F", border: "1px solid #2A1F3D", borderRadius: 8, fontSize: 12 }} />
+                        <XAxis dataKey="month" stroke="#A89FB8" fontSize={10} tickLine={false} axisLine={false} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -315,13 +315,13 @@ export default function CompanyResearch() {
             <div className="rounded-2xl border border-brand-primary/40 bg-gradient-to-r from-brand-primary/15 via-brand-accent/10 to-brand-secondary/15 p-8 flex flex-col md:flex-row items-center justify-between gap-6">
               <div>
                 <h3 className="font-heading text-2xl font-semibold">Ready to turn research into revenue?</h3>
-                <p className="text-ink-muted mt-1">We've assembled enough signal. Let's design your GTM motion.</p>
+                <p className="text-ink-muted mt-1">We&apos;ve assembled enough signal. Let&apos;s design your GTM motion.</p>
               </div>
               <Button
                 onClick={() => navigate("/ideation")}
                 data-testid="research-to-ideation-cta"
                 size="lg"
-                className="bg-brand-primary hover:bg-[#4338CA] text-white shadow-xl shadow-brand-primary/40"
+                className="bg-brand-primary hover:bg-[#9333EA] text-white shadow-xl shadow-brand-primary/40"
               >
                 Start Your GTM Strategy <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
