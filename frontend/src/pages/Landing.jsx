@@ -58,13 +58,29 @@ export default function Landing() {
 
         <div className="relative max-w-6xl mx-auto text-center">
           <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8 }}
+            className="flex justify-center mb-2"
+          >
+            <img
+              src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/den8bpor_new%20move%20logo.png"
+              alt="MOVE — Marketing Opportunity Value Executor"
+              className="h-32 sm:h-44 lg:h-56 w-auto object-contain drop-shadow-[0_0_40px_rgba(168,85,247,0.45)]"
+              style={{ mixBlendMode: 'lighten' }}
+            />
+          </motion.div>
+
+          <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-xs text-ink-muted mb-6"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-brand-success animate-pulse" />
-            Multi-Agent GTM Intelligence
+            <span className="font-mono uppercase tracking-[0.18em] text-[10px]">M.O.V.E.</span>
+            <span className="text-ink-muted/60">·</span>
+            Marketing Opportunity Value Executor
           </motion.div>
 
           <motion.h1
@@ -289,13 +305,14 @@ export default function Landing() {
 
       <footer className="border-t border-ink-border px-6 lg:px-10 py-10">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-muted">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <img
-              src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/9jdueuty_ChatGPT%20Image%20Jun%2016%2C%202026%2C%2009_48_17%20AM.png"
+              src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/den8bpor_new%20move%20logo.png"
               alt="MOVE"
-              className="h-7 w-auto object-contain"
+              className="h-10 w-auto object-contain"
+              style={{ mixBlendMode: 'lighten' }}
             />
-            <span>© 2026</span>
+            <span>Marketing Opportunity Value Executor · © 2026</span>
           </div>
           <div className="flex items-center gap-5">
             <a href="#" onClick={(e)=>e.preventDefault()} className="hover:text-ink-text transition-colors">Privacy</a>

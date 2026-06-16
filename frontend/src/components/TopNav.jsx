@@ -33,11 +33,12 @@ export default function TopNav({ variant = "app" }) {
       }`}
     >
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 h-16 flex items-center gap-6">
-        <Link to="/" data-testid="nav-logo" className="flex items-center gap-2.5 group">
+        <Link to="/" data-testid="nav-logo" className="flex items-center group -my-2">
           <img
-            src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/9jdueuty_ChatGPT%20Image%20Jun%2016%2C%202026%2C%2009_48_17%20AM.png"
-            alt="MOVE"
-            className="h-9 w-auto object-contain"
+            src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/den8bpor_new%20move%20logo.png"
+            alt="MOVE — Marketing Opportunity Value Executor"
+            className="h-14 w-auto object-contain"
+            style={{ mixBlendMode: 'lighten' }}
           />
         </Link>
 
