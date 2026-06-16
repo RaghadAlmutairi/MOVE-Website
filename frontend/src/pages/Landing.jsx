@@ -61,12 +61,12 @@ export default function Landing() {
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
-            className="flex justify-center mb-2"
+            className="flex justify-center -mt-6 mb-2"
           >
             <img
               src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/den8bpor_new%20move%20logo.png"
               alt="MOVE — Marketing Opportunity Value Executor"
-              className="h-32 sm:h-44 lg:h-56 w-auto object-contain drop-shadow-[0_0_40px_rgba(168,85,247,0.45)]"
+              className="h-56 sm:h-72 md:h-80 lg:h-96 w-auto object-contain drop-shadow-[0_0_60px_rgba(168,85,247,0.55)]"
               style={{ mixBlendMode: 'lighten' }}
             />
           </motion.div>
