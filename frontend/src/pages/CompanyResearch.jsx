@@ -282,8 +282,8 @@ export default function CompanyResearch() {
                 <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
                   <div className="text-xs uppercase tracking-wider text-ink-muted mb-3">Market Signals</div>
                   <div className="space-y-2.5">
-                    {MARKET_SIGNALS.map((s, i) => (
-                      <div key={i} className="flex items-start gap-2 text-xs">
+                    {MARKET_SIGNALS.map((s) => (
+                      <div key={s.text} className="flex items-start gap-2 text-xs">
                         {s.type === "opportunity" ? (
                           <Lightbulb className="w-3.5 h-3.5 text-brand-success mt-0.5 shrink-0" />
                         ) : (

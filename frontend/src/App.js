@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -10,11 +10,8 @@ import ContentStudio from "@/pages/ContentStudio";
 import AICopilotDock from "@/components/AICopilotDock";
 
 function App() {
-  const [bootReady, setBootReady] = useState(false);
   useEffect(() => {
     document.documentElement.classList.add("dark");
-    const t = setTimeout(() => setBootReady(true), 50);
-    return () => clearTimeout(t);
   }, []);
 
   return (
@@ -30,7 +27,6 @@ function App() {
         <AICopilotDock />
       </BrowserRouter>
       <Toaster theme="dark" position="bottom-right" />
-      {bootReady && null}
     </div>
   );
 }

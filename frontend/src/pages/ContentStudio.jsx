@@ -204,12 +204,12 @@ export default function ContentStudio() {
                       "18 Content Assets (MD + DOCX)",
                       "Brand voice guide + tone library",
                       "ICP & persona JSON for HubSpot / Salesforce",
-                    ].map((i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-ink-text/90">
+                    ].map((it) => (
+                      <li key={it} className="flex items-center gap-2 text-sm text-ink-text/90">
                         <div className="w-4 h-4 rounded-full bg-brand-success/20 border border-brand-success/40 flex items-center justify-center">
                           <div className="w-1.5 h-1.5 rounded-full bg-brand-success" />
                         </div>
-                        {i}
+                        {it}
                       </li>
                     ))}
                   </ul>

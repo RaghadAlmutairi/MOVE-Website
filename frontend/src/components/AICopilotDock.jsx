@@ -15,19 +15,20 @@ export default function AICopilotDock() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([
-    { role: "ai", text: "Hi Alex — I'm your GTM Copilot. Ask me anything about Northwind's strategy, content, or competitors." },
+    { id: "init", role: "ai", text: "Hi Alex — I'm your GTM Copilot. Ask me anything about Northwind's strategy, content, or competitors." },
   ]);
 
   const send = (textOverride) => {
     const text = textOverride ?? input;
     if (!text.trim()) return;
-    const next = [...messages, { role: "user", text }];
+    const next = [...messages, { id: `u-${Date.now()}`, role: "user", text }];
     setInput("");
     setMessages(next);
     setTimeout(() => {
       setMessages([
         ...next,
         {
+          id: `a-${Date.now()}`,
           role: "ai",
           text:
             text.toLowerCase().includes("position")
@@ -88,8 +89,8 @@ export default function AICopilotDock() {
               </div>
 
               <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-thin">
-                {messages.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                {messages.map((m) => (
+                  <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-[88%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
                         m.role === "user"

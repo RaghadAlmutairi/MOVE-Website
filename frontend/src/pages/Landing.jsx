@@ -158,7 +158,7 @@ export default function Landing() {
               <div className="col-span-9 space-y-3">
                 <div className="grid grid-cols-4 gap-3">
                   {[87, 92, 64, 79].map((v, i) => (
-                    <div key={i} className="rounded-lg border border-ink-border bg-ink-bg/40 p-3">
+                    <div key={`score-${v}-${i}`} className="rounded-lg border border-ink-border bg-ink-bg/40 p-3">
                       <div className="text-[10px] uppercase tracking-wider text-ink-muted">Score {i + 1}</div>
                       <div className="font-heading text-2xl text-ink-text mt-1">{v}</div>
                       <div className="h-1 mt-2 rounded-full bg-ink-elevated overflow-hidden">
@@ -171,7 +171,7 @@ export default function Landing() {
                   <div className="text-[10px] uppercase tracking-wider text-ink-muted mb-3">Channel allocation</div>
                   <div className="absolute bottom-4 left-4 right-4 flex items-end gap-1.5 h-20">
                     {[60, 80, 45, 70, 35, 50, 30].map((h, i) => (
-                      <div key={i} className="flex-1 rounded-t bg-gradient-to-t from-brand-primary to-brand-accent" style={{ height: `${h}%`, opacity: 0.5 + i * 0.07 }} />
+                      <div key={`bar-${i}-${h}`} className="flex-1 rounded-t bg-gradient-to-t from-brand-primary to-brand-accent" style={{ height: `${h}%`, opacity: 0.5 + i * 0.07 }} />
                     ))}
                   </div>
                 </div>
@@ -266,9 +266,9 @@ export default function Landing() {
             <h2 className="font-heading text-4xl sm:text-5xl font-semibold tracking-tight">Frequently asked</h2>
           </div>
           <Accordion type="single" collapsible className="space-y-2" data-testid="faq-accordion">
-            {FAQ.map((f, i) => (
-              <AccordionItem key={i} value={`item-${i}`} className="border border-ink-border bg-ink-surface rounded-lg px-5 data-[state=open]:border-brand-primary/50">
-                <AccordionTrigger data-testid={`faq-item-${i}`} className="text-left font-heading font-medium text-base text-ink-text hover:no-underline">
+            {FAQ.map((f) => (
+              <AccordionItem key={f.q} value={f.q} className="border border-ink-border bg-ink-surface rounded-lg px-5 data-[state=open]:border-brand-primary/50">
+                <AccordionTrigger data-testid={`faq-item-${f.q}`} className="text-left font-heading font-medium text-base text-ink-text hover:no-underline">
                   {f.q}
                 </AccordionTrigger>
                 <AccordionContent className="text-ink-muted leading-relaxed">{f.a}</AccordionContent>

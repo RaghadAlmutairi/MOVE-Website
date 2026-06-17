@@ -356,17 +356,17 @@ function Card({ title, items, list, chips, icon: Icon, children }) {
       </div>
       {chips && (
         <div className="flex flex-wrap gap-1.5">
-          {items.map((i) => (
-            <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-ink-elevated border border-ink-border text-ink-text/90">{i}</span>
+          {items.map((it) => (
+            <span key={it} className="text-xs px-2.5 py-1 rounded-full bg-ink-elevated border border-ink-border text-ink-text/90">{it}</span>
           ))}
         </div>
       )}
       {list && (
         <ul className="space-y-2">
-          {items.map((i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-ink-text/90">
+          {items.map((it) => (
+            <li key={it} className="flex items-start gap-2 text-sm text-ink-text/90">
               <div className="w-1.5 h-1.5 rounded-full bg-brand-primary mt-2 shrink-0" />
-              {i}
+              {it}
             </li>
           ))}
         </ul>
@@ -377,19 +377,22 @@ function Card({ title, items, list, chips, icon: Icon, children }) {
 }
 
 function CopilotPanel() {
-  const [messages, setMessages] = useState(COPILOT_CONVERSATIONS);
+  const [messages, setMessages] = useState(() =>
+    COPILOT_CONVERSATIONS.map((m, idx) => ({ ...m, id: `seed-${idx}` }))
+  );
   const [input, setInput] = useState("");
 
   const send = (t) => {
     const text = t ?? input;
     if (!text.trim()) return;
-    const next = [...messages, { role: "user", text }];
+    const userId = `u-${Date.now()}`;
+    const next = [...messages, { id: userId, role: "user", text }];
     setMessages(next);
     setInput("");
     setTimeout(() => {
       setMessages([
         ...next,
-        { role: "ai", text: "Got it. I've drafted a refinement — highlighted in the main panel. Want me to A/B test it against the current version?" },
+        { id: `a-${Date.now()}`, role: "ai", text: "Got it. I've drafted a refinement — highlighted in the main panel. Want me to A/B test it against the current version?" },
       ]);
     }, 800);
   };
@@ -409,8 +412,8 @@ function CopilotPanel() {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+        {messages.map((m) => (
+          <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[88%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
               m.role === "user" ? "bg-brand-primary text-white" : "bg-ink-elevated border border-ink-border text-ink-text"
             }`}>
