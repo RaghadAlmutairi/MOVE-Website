@@ -194,7 +194,7 @@ function StageBanner({ kind, title, desc }) {
 function Skeleton({ lines = 3 }) {
   return (
     <div className="space-y-2 animate-pulse">
-      {[...Array(lines)].map((_, i) => <div key={i} className="h-3 rounded bg-ink-elevated" style={{ width: `${100 - i * 8}%` }} />)}
+      {[...Array(lines)].map((_, i) => <div key={`skeleton-line-${i}`} className="h-3 rounded bg-ink-elevated" style={{ width: `${100 - i * 8}%` }} />)}
     </div>
   );
 }

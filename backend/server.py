@@ -222,6 +222,7 @@ async def regenerate_phase_b(run_id: str):
 # ── Exports ───────────────────────────────────────────────────────────────────
 @api.post("/runs/{run_id}/export")
 async def export_run(run_id: str, body: ExportRequest):
+    rec = None
     try:
         rec = wo.export(run_id, body.format)
     except ValueError as e:

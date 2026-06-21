@@ -60,6 +60,9 @@ export function pollRun(id, onUpdate, intervalMs = 2000) {
   return () => { stopped = true; if (timer) clearTimeout(timer); };
 }
 
+// `activeRun` stores ONLY the opaque server-issued run UUID — never auth tokens
+// or secrets. Authentication, if/when added, must use httpOnly cookies issued
+// by the backend, not localStorage. See INTEGRATION_REPORT.md for context.
 const KEY = "move:active_run_id";
 export const activeRun = {
   get: () => { try { return localStorage.getItem(KEY) || null; } catch (e) { void e; return null; } },
