@@ -78,6 +78,16 @@ class ExportRequest(BaseModel):
     format: Literal["pdf", "word", "pptx", "strategy_pdf"]
 
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class ChatRequest(BaseModel):
+    scope: Literal["research", "strategy"]
+    messages: List[ChatMessage]
+
+
 SAFE_FILE = re.compile(r"^[A-Za-z0-9_.\-]+$")
 
 
@@ -245,6 +255,20 @@ async def get_file(run_id: str, filename: str):
         ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     }.get(p.suffix.lower(), "application/octet-stream")
     return FileResponse(p, media_type=media, filename=filename)
+
+
+@api.post("/runs/{run_id}/chat")
+async def chat_run(run_id: str, body: ChatRequest):
+    import chat as chat_module
+    doc = await runs.find_one({"id": run_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Run not found")
+    msgs = [m.model_dump() for m in body.messages]
+    try:
+        reply = chat_module.reply(doc, body.scope, msgs)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chat unavailable: {e}")
+    return reply
 
 
 # ── Mount + CORS ──────────────────────────────────────────────────────────────

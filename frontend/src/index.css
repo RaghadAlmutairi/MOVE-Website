@@ -6,7 +6,9 @@ html, body {
     margin: 0;
     background-color: #0A0613;
     color: #F8FAFC;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Roboto', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -49,7 +51,7 @@ html, body {
 @layer base {
     * { @apply border-border; }
     body { @apply bg-ink-bg text-ink-text; }
-    h1, h2, h3, h4, h5, h6 { font-family: 'Outfit', sans-serif; letter-spacing: -0.015em; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Roboto', system-ui, sans-serif; letter-spacing: -0.01em; font-weight: 700; }
 }
 
 @layer utilities {

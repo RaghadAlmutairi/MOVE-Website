@@ -40,6 +40,8 @@ export const api = {
 
   exportFile: (id, format) => req(`/runs/${id}/export`, { method: "POST", body: JSON.stringify({ format }) }),
   fileUrl: (id, filename) => `${API}/runs/${id}/files/${filename}`,
+
+  chat: (id, scope, messages) => req(`/runs/${id}/chat`, { method: "POST", body: JSON.stringify({ scope, messages }) }),
 };
 
 // Long-poll a run until a terminal/awaiting state.

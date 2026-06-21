@@ -15,14 +15,14 @@ import RunStatusPill from "@/components/RunStatusPill";
 
 const NAV = [
   { to: "/research", label: "Research" },
-  { to: "/ideation", label: "Ideation" },
-  { to: "/command-center", label: "Command Center" },
-  { to: "/studio", label: "Studio" },
+  { to: "/ideation", label: "Strategy" },
+  { to: "/command-center", label: "Studio" },
+  { to: "/studio", label: "Content" },
 ];
 
 export default function TopNav({ variant = "app" }) {
   const location = useLocation();
-  const [workspace, setWorkspace] = useState("Northwind AI");
+  const [workspace, setWorkspace] = useState("My workspace");
 
   return (
     <header
@@ -59,7 +59,7 @@ export default function TopNav({ variant = "app" }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-ink-surface border-ink-border text-ink-text" align="start">
                   <DropdownMenuLabel className="text-ink-muted text-xs uppercase tracking-wider">Workspaces</DropdownMenuLabel>
-                  {["Northwind AI", "Acme Robotics", "Helix Health"].map((w) => (
+                  {["My workspace"].map((w) => (
                     <DropdownMenuItem key={w} onClick={() => setWorkspace(w)} className="cursor-pointer focus:bg-ink-elevated">
                       {w}
                     </DropdownMenuItem>

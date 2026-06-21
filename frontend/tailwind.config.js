@@ -5,9 +5,9 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                heading: ['Outfit', 'sans-serif'],
-                sans: ['Manrope', 'sans-serif'],
-                mono: ['JetBrains Mono', 'monospace'],
+                heading: ['Roboto', 'system-ui', 'sans-serif'],
+                sans: ['Roboto', 'system-ui', 'sans-serif'],
+                mono: ['Roboto Mono', 'ui-monospace', 'monospace'],
             },
             borderRadius: {
                 lg: 'var(--radius)',

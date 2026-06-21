@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Globe, MessageSquare, Loader2, ArrowRight, Sparkles, ChevronRight, CheckCircle2, RefreshCw,
-  AlertTriangle, TrendingUp, Lightbulb, ShieldAlert, ExternalLink, Users,
+  AlertTriangle, TrendingUp, Lightbulb, ShieldAlert, Users, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ChatPanel from "@/components/ChatPanel";
 import { useRun } from "@/lib/RunContext";
 import { api } from "@/lib/api";
-import { getReportView, getSources } from "@/lib/transforms";
+import { getReportView } from "@/lib/transforms";
 
 export default function CompanyResearch() {
   const navigate = useNavigate();
@@ -26,14 +27,13 @@ export default function CompanyResearch() {
   const stage = run?.stage;
   const result = run?.result;
   const view = useMemo(() => (result ? getReportView(result) : null), [result]);
-  const sources = useMemo(() => (result ? getSources(result) : []), [result]);
 
   const isResearchRunning = status === "running" && stage === "research";
   const isAwaiting = status === "awaiting_research_approval";
   const isFailed = status === "failed";
 
   const onAnalyze = async () => {
-    if (!query.trim()) { toast.error("Please enter a research query"); return; }
+    if (!query.trim()) { toast.error("Please enter a company name"); return; }
     setSubmitting(true);
     try {
       await startRun(query.trim(), url.trim());
@@ -67,34 +67,34 @@ export default function CompanyResearch() {
 
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-heading text-4xl font-semibold tracking-tight">Research</h1>
-            <p className="text-ink-muted mt-1">Describe the market or company to research. The research agent will run a routed, multi-tool pass and synthesise a report.</p>
+            <h1 className="font-heading text-5xl font-bold tracking-tight">Research</h1>
+            <p className="text-ink-muted mt-2 text-lg">Enter a company name to launch the multi-agent research pipeline.</p>
           </div>
-          <Badge variant="outline" className="border-brand-success/40 text-brand-success bg-brand-success/10 w-fit">
+          <Badge variant="outline" className="border-brand-success/40 text-brand-success bg-brand-success/10 w-fit text-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-success mr-2 animate-pulse" /> Engine online
           </Badge>
         </div>
 
         {/* Query form */}
-        <div className="rounded-xl border border-ink-border bg-ink-surface p-5 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        <div className="rounded-xl border border-ink-border bg-ink-surface p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             <div className="md:col-span-7">
-              <label className="text-xs uppercase tracking-wider text-ink-muted mb-1.5 block">Research query</label>
+              <label className="text-sm font-medium text-ink-text mb-2 block">Company name</label>
               <div className="relative">
-                <MessageSquare className="absolute left-3 top-2.5 w-4 h-4 text-ink-muted" />
-                <Input data-testid="research-query" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g., 'GTM strategy for an AI consulting firm in EMEA'" className="pl-9 bg-ink-bg border-ink-border text-ink-text" />
+                <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-ink-muted" />
+                <Input data-testid="research-query" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g., Stripe, OpenAI, your own brand…" className="pl-10 h-12 text-base bg-ink-bg border-ink-border text-ink-text" />
               </div>
             </div>
             <div className="md:col-span-3">
-              <label className="text-xs uppercase tracking-wider text-ink-muted mb-1.5 block">Company URL (optional)</label>
+              <label className="text-sm font-medium text-ink-text mb-2 block">Company URL <span className="text-ink-muted font-normal">(optional)</span></label>
               <div className="relative">
-                <Globe className="absolute left-3 top-2.5 w-4 h-4 text-ink-muted" />
-                <Input data-testid="research-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" className="pl-9 bg-ink-bg border-ink-border text-ink-text" />
+                <Globe className="absolute left-3 top-3 w-4 h-4 text-ink-muted" />
+                <Input data-testid="research-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" className="pl-10 h-12 text-base bg-ink-bg border-ink-border text-ink-text" />
               </div>
             </div>
             <div className="md:col-span-2">
-              <Button onClick={onAnalyze} disabled={submitting || isResearchRunning} data-testid="research-analyze-btn" className="w-full bg-brand-primary hover:bg-[#9333EA] text-white shadow-lg shadow-brand-primary/30">
-                {submitting || isResearchRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-1.5" />Run Research</>}
+              <Button onClick={onAnalyze} disabled={submitting || isResearchRunning} data-testid="research-analyze-btn" className="w-full h-12 text-base bg-brand-primary hover:bg-[#9333EA] text-white shadow-lg shadow-brand-primary/30">
+                {submitting || isResearchRunning ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-1.5" />Research</>}
               </Button>
             </div>
           </div>
@@ -114,10 +114,9 @@ export default function CompanyResearch() {
 
             <Tabs defaultValue="report" className="mt-8">
               <TabsList className="bg-ink-surface border border-ink-border p-1 h-auto">
-                <TabsTrigger data-testid="tab-report" value="report" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Report</TabsTrigger>
-                <TabsTrigger data-testid="tab-competitors" value="competitors" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Competitors</TabsTrigger>
-                <TabsTrigger data-testid="tab-personas" value="personas" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Personas</TabsTrigger>
-                <TabsTrigger data-testid="tab-sources" value="sources" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Sources ({sources.length})</TabsTrigger>
+                <TabsTrigger data-testid="tab-report" value="report" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-6 text-sm">Report</TabsTrigger>
+                <TabsTrigger data-testid="tab-competitors" value="competitors" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-6 text-sm">Competitors</TabsTrigger>
+                <TabsTrigger data-testid="tab-personas" value="personas" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-6 text-sm">Personas</TabsTrigger>
               </TabsList>
 
               <TabsContent value="report" className="mt-6">
@@ -129,10 +128,12 @@ export default function CompanyResearch() {
               <TabsContent value="personas" className="mt-6">
                 <PersonasTab view={view} />
               </TabsContent>
-              <TabsContent value="sources" className="mt-6">
-                <SourcesTab sources={sources} />
-              </TabsContent>
             </Tabs>
+
+            {/* Grounded chat about the research */}
+            <div className="mt-8">
+              <ChatPanel scope="research" />
+            </div>
 
             {/* HITL gate */}
             {isAwaiting && (
@@ -203,30 +204,19 @@ function StageBanner({ kind, title, desc }) {
   );
 }
 
-const CONFIDENCE_COLOR = {
-  high: "text-brand-success",
-  low:  "text-brand-warning",
-};
-
 function ReportHeader({ view }) {
-  const confColor = CONFIDENCE_COLOR[view.confidence] || "text-brand-secondary";
   return (
-    <div className="rounded-xl border border-ink-border bg-ink-surface p-6 mb-2">
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-        <div>
-          <Badge variant="outline" className="border-brand-accent/40 text-brand-accent bg-brand-accent/10 mb-2 text-[10px]">
-            <Sparkles className="w-3 h-3 mr-1" /> Research report
-          </Badge>
-          <h2 className="font-heading text-2xl font-semibold text-ink-text">{view.title || "Untitled"}</h2>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted mt-1">
-            {view.industry && <span>{view.industry}</span>}
-            {view.geography && <span>· {view.geography}</span>}
-            {view.confidence && <span>· Confidence: <span className={`font-medium ${confColor}`}>{view.confidence}</span></span>}
-          </div>
-        </div>
+    <div className="rounded-xl border border-ink-border bg-ink-surface p-7 mb-2">
+      <Badge variant="outline" className="border-brand-accent/40 text-brand-accent bg-brand-accent/10 mb-3 text-xs">
+        <Sparkles className="w-3 h-3 mr-1" /> Research report
+      </Badge>
+      <h2 className="font-heading text-3xl font-bold text-ink-text leading-tight">{view.title || "Untitled"}</h2>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-muted mt-2">
+        {view.industry && <span>{view.industry}</span>}
+        {view.geography && <span>· {view.geography}</span>}
       </div>
       {view.evidenceLimitation && (
-        <div className="mt-4 rounded-md border border-brand-warning/30 bg-brand-warning/5 px-3 py-2 text-xs text-brand-warning flex items-start gap-2">
+        <div className="mt-4 rounded-md border border-brand-warning/30 bg-brand-warning/5 px-3 py-2 text-sm text-brand-warning flex items-start gap-2">
           <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{view.evidenceLimitation}</span>
         </div>
@@ -350,24 +340,6 @@ function MiniList({ label, items }) {
       <ul className="text-xs text-ink-text/90 space-y-1">
         {items.map((i) => <li key={i} className="flex items-start gap-1.5"><span className="w-1 h-1 rounded-full bg-brand-primary mt-1.5 shrink-0" />{i}</li>)}
       </ul>
-    </div>
-  );
-}
-
-function SourcesTab({ sources }) {
-  if (sources.length === 0) return <EmptyText text="No sources captured." />;
-  return (
-    <div className="rounded-xl border border-ink-border bg-ink-surface divide-y divide-ink-border">
-      {sources.map((s) => (
-        <a key={s.id || s.url} href={s.url} target="_blank" rel="noreferrer" className="flex items-start gap-3 p-3 hover:bg-ink-elevated transition-colors">
-          <span className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${s.official ? "bg-brand-success" : "bg-ink-muted"}`} />
-          <div className="flex-1 min-w-0">
-            <div className="text-sm text-ink-text truncate">{s.title || s.url}</div>
-            <div className="text-[11px] text-ink-muted truncate">{s.domain}{s.role ? ` · ${s.role}` : ""}</div>
-          </div>
-          <ExternalLink className="w-3.5 h-3.5 text-ink-muted shrink-0 mt-1" />
-        </a>
-      ))}
     </div>
   );
 }
