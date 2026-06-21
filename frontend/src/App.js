@@ -7,7 +7,7 @@ import CompanyResearch from "@/pages/CompanyResearch";
 import StrategyIdeation from "@/pages/StrategyIdeation";
 import CommandCenter from "@/pages/CommandCenter";
 import ContentStudio from "@/pages/ContentStudio";
-import AICopilotDock from "@/components/AICopilotDock";
+import { RunProvider } from "@/lib/RunContext";
 
 function App() {
   useEffect(() => {
@@ -17,14 +17,15 @@ function App() {
   return (
     <div className="App bg-ink-bg text-ink-text min-h-screen font-sans antialiased">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/research" element={<CompanyResearch />} />
-          <Route path="/ideation" element={<StrategyIdeation />} />
-          <Route path="/command-center" element={<CommandCenter />} />
-          <Route path="/studio" element={<ContentStudio />} />
-        </Routes>
-        <AICopilotDock />
+        <RunProvider>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/research" element={<CompanyResearch />} />
+            <Route path="/ideation" element={<StrategyIdeation />} />
+            <Route path="/command-center" element={<CommandCenter />} />
+            <Route path="/studio" element={<ContentStudio />} />
+          </Routes>
+        </RunProvider>
       </BrowserRouter>
       <Toaster theme="dark" position="bottom-right" />
     </div>

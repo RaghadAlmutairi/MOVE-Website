@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import RunStatusPill from "@/components/RunStatusPill";
 
 const NAV = [
   { to: "/research", label: "Research" },
@@ -108,6 +109,7 @@ export default function TopNav({ variant = "app" }) {
         )}
 
         <div className={`flex items-center gap-2 ${variant === "marketing" ? "" : "ml-auto"}`}>
+          {variant === "app" && <RunStatusPill />}
           {variant === "app" && (
             <button
               data-testid="search-trigger"

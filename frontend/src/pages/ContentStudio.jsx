@@ -1,54 +1,214 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Copy,
-  Pencil,
-  Download,
-  Linkedin,
-  Twitter,
-  Instagram,
-  Mail,
-  FileText,
-  Megaphone,
-  Sparkles,
-  ChevronRight,
-  Presentation,
-  FileSpreadsheet,
-  Calendar,
-  Package,
-  Eye,
-  Archive,
+  Copy, Download, Linkedin, Mail, FileText, Sparkles, ChevronRight, Loader2, CheckCircle2,
+  RefreshCw, AlertTriangle, Presentation, FileSpreadsheet, ArrowRight, ExternalLink,
 } from "lucide-react";
+import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { SOCIAL_CONTENT, STRATEGY_FILES } from "@/lib/mockData";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useRun } from "@/lib/RunContext";
+import { api } from "@/lib/api";
+import { getContentView, hasPhaseB } from "@/lib/transforms";
 
-const CATEGORIES = [
-  { id: "linkedin", label: "LinkedIn Posts", icon: Linkedin, color: "#0A66C2", items: SOCIAL_CONTENT.linkedin },
-  { id: "x", label: "X Posts", icon: Twitter, color: "#1DA1F2", items: SOCIAL_CONTENT.x },
-  { id: "instagram", label: "Instagram", icon: Instagram, color: "#E1306C", items: SOCIAL_CONTENT.instagram },
-  { id: "email", label: "Email", icon: Mail, color: "#A855F7", items: SOCIAL_CONTENT.email },
-  { id: "blog", label: "Blog", icon: FileText, color: "#E879F9", items: SOCIAL_CONTENT.blog },
-  { id: "ads", label: "Ad Copy", icon: Megaphone, color: "#F59E0B", items: SOCIAL_CONTENT.ads },
+// gtm_v4_fixed supports exactly these export formats — no others.
+const FORMATS = [
+  { key: "pdf",          label: "Combined PDF",        Icon: FileText,          color: "#EF4444", filename: "report.pdf" },
+  { key: "word",         label: "Combined Word",       Icon: FileText,          color: "#3B82F6", filename: "report.docx" },
+  { key: "pptx",         label: "PowerPoint deck",     Icon: Presentation,      color: "#F97316", filename: "presentation.pptx" },
+  { key: "strategy_pdf", label: "Strategy PDF",        Icon: FileSpreadsheet,   color: "#A855F7", filename: "gtm_strategy.pdf" },
 ];
 
-const FILE_ICONS = { FileText, Presentation, FileSpreadsheet, Calendar };
+const VALID_CHANNELS = [
+  { key: "linkedin", label: "LinkedIn posts" },
+  { key: "blog",     label: "Blog articles" },
+  { key: "seo",      label: "SEO articles" },
+  { key: "email",    label: "Email sequences" },
+];
 
 export default function ContentStudio() {
-  const [category, setCategory] = useState("linkedin");
+  const navigate = useNavigate();
+  const { run, mutate } = useRun();
+  const result = run?.result;
+  const content = useMemo(() => (result ? getContentView(result) : null), [result]);
+  const [channels, setChannels] = useState(["linkedin", "blog", "email"]);
+  const [busyFmt, setBusyFmt] = useState(null);
 
-  const handleCopy = (text) => {
-    navigator.clipboard?.writeText(text);
-    toast.success("Copied to clipboard");
+  if (!run) {
+    return <Shell><Empty title="No active run" desc="Start a research pass first." cta="Start Research" onClick={() => navigate("/research")} /></Shell>;
+  }
+  if (!content || (content.linkedin.length === 0 && content.blogs.length === 0 && content.emails.length === 0)) {
+    return <Shell><Empty title="No content yet" desc="Run the pipeline through to Phase A in the Strategy view." cta="Open Strategy" onClick={() => navigate("/ideation")} /></Shell>;
+  }
+
+  const phaseBReady = run.status === "ready_for_phase_b";
+  const phaseBRunning = run.status === "running" && run.stage === "content_phase_b";
+  const phaseBPending = run.status === "awaiting_phase_b_approval";
+  const phaseBComplete = run.status === "complete" || hasPhaseB(result);
+
+  const startPhaseB = async () => {
+    if (channels.length === 0) { toast.error("Select at least one channel"); return; }
+    try {
+      await mutate(() => api.startPhaseB(run.id, channels));
+      toast.success("Phase B started", { description: `Generating: ${channels.join(", ")}` });
+    } catch (e) { toast.error("Phase B failed", { description: e.message }); }
   };
-  const handleDownload = (name) => toast.success(`Downloading ${name}`);
 
-  const current = CATEGORIES.find((c) => c.id === category);
+  const exportFile = async (fmt) => {
+    setBusyFmt(fmt);
+    try {
+      const rec = await api.exportFile(run.id, fmt);
+      toast.success(`${rec.filename} ready`);
+      window.open(api.fileUrl(run.id, rec.filename), "_blank");
+    } catch (e) { toast.error("Export failed", { description: e.message }); }
+    finally { setBusyFmt(null); }
+  };
 
+  const completedExports = (run.exports || []).reduce((m, e) => { m[e.format] = e; return m; }, {});
+
+  return (
+    <Shell>
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <Badge variant="outline" className="border-brand-accent/40 text-brand-accent bg-brand-accent/10 mb-3 text-[10px]"><Sparkles className="w-3 h-3 mr-1" /> Content & exports</Badge>
+          <h1 className="font-heading text-4xl font-semibold tracking-tight">Content Studio</h1>
+          <p className="text-ink-muted mt-1.5">Inspect agent-generated drafts and produce the deliverables.</p>
+        </div>
+      </div>
+
+      <Tabs defaultValue="content" className="w-full">
+        <TabsList className="bg-ink-surface border border-ink-border p-1 h-auto">
+          <TabsTrigger data-testid="tab-content" value="content" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Content</TabsTrigger>
+          <TabsTrigger data-testid="tab-phase-b" value="phase_b" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Phase B</TabsTrigger>
+          <TabsTrigger data-testid="tab-exports" value="exports" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Exports</TabsTrigger>
+        </TabsList>
+
+        {/* CONTENT */}
+        <TabsContent value="content" className="mt-6 space-y-8">
+          {content.positioning_line && (
+            <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted mb-1">Positioning line</div>
+              <p className="font-heading text-lg text-ink-text leading-snug">{content.positioning_line}</p>
+              {content.messaging_pillars?.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {content.messaging_pillars.map((p) => <span key={p} className="text-xs px-2.5 py-1 rounded-full bg-ink-elevated border border-ink-border">{p}</span>)}
+                </div>
+              )}
+            </div>
+          )}
+
+          <ContentGroup title="LinkedIn posts" Icon={Linkedin} items={content.linkedin.map((p, i) => ({
+            id: `li-${i}`,
+            heading: `[${p.kind}] ${p.hook}`,
+            body: p.body,
+            footer: [p.engagement_question, p.cta, (p.hashtags || []).join(" ")].filter(Boolean).join(" · "),
+          }))} />
+
+          <ContentGroup title="Blog drafts" Icon={FileText} items={content.blogs.map((p, i) => ({
+            id: `bl-${i}`,
+            heading: `[${p.kind}] ${p.title}`,
+            meta: `Keyword: ${p.target_keyword || "—"}${p.secondary_keywords?.length ? ` · Secondary: ${p.secondary_keywords.join(", ")}` : ""}`,
+            body: p.body,
+            footer: p.cta,
+          }))} emptyText="Phase B not run yet — blog drafts will appear after Phase B." />
+
+          <ContentGroup title="Email drafts" Icon={Mail} items={content.emails.map((p, i) => ({
+            id: `em-${i}`,
+            heading: `[${p.kind}] ${p.subject}`,
+            meta: p.preview ? `Preview: ${p.preview}` : "",
+            body: p.body,
+            footer: p.cta,
+          }))} emptyText="Phase B not run yet — email drafts will appear after Phase B." />
+        </TabsContent>
+
+        {/* PHASE B */}
+        <TabsContent value="phase_b" className="mt-6 space-y-5">
+          {!phaseBReady && !phaseBRunning && !phaseBPending && !phaseBComplete && (
+            <div className="rounded-xl border border-dashed border-ink-border p-6 text-sm text-ink-muted">
+              Phase B becomes available after the strategy AND Phase A content are both approved.
+              <div className="mt-3"><Button variant="outline" onClick={() => navigate("/ideation")} className="border-ink-border text-ink-text hover:bg-ink-surface">Open Strategy review <ArrowRight className="ml-2 w-4 h-4" /></Button></div>
+            </div>
+          )}
+
+          {(phaseBReady || phaseBPending || phaseBComplete) && (
+            <div className="rounded-xl border border-ink-border bg-ink-surface p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="font-heading text-lg font-semibold">Phase B — full content suite</h3>
+                {phaseBComplete && <Badge className="ml-auto bg-brand-success/15 text-brand-success border border-brand-success/40">Generated</Badge>}
+                {phaseBPending && <Badge className="ml-auto bg-brand-warning/15 text-brand-warning border border-brand-warning/40">Awaiting approval</Badge>}
+              </div>
+              <p className="text-sm text-ink-muted mb-4">Select the channels you want the content agent to fully produce.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {VALID_CHANNELS.map((c) => {
+                  const on = channels.includes(c.key);
+                  return (
+                    <button key={c.key} onClick={() => setChannels(on ? channels.filter((k) => k !== c.key) : [...channels, c.key])} data-testid={`phase-b-channel-${c.key}`} className={`px-3 py-1.5 rounded-full border text-sm transition-colors ${on ? "border-brand-primary/60 bg-brand-primary/15 text-brand-primary" : "border-ink-border bg-ink-elevated text-ink-muted hover:text-ink-text"}`}>
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={startPhaseB} disabled={phaseBRunning || channels.length === 0} data-testid="start-phase-b" className="bg-brand-primary hover:bg-[#9333EA] text-white">
+                  {phaseBRunning ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Running…</> : <><Sparkles className="w-4 h-4 mr-1.5" /> {phaseBComplete ? "Re-run Phase B" : "Run Phase B"}</>}
+                </Button>
+                {phaseBPending && (
+                  <>
+                    <Button variant="outline" onClick={async () => { try { await mutate(() => api.regeneratePhaseB(run.id)); toast.success("Regenerating Phase B…"); } catch (e) { toast.error(e.message); } }} data-testid="regenerate-phase-b" className="border-ink-border text-ink-text hover:bg-ink-surface">
+                      <RefreshCw className="w-4 h-4 mr-1.5" /> Regenerate
+                    </Button>
+                    <Button onClick={async () => { try { await mutate(() => api.approvePhaseB(run.id)); toast.success("Phase B approved"); } catch (e) { toast.error(e.message); } }} data-testid="approve-phase-b" className="bg-brand-success hover:bg-[#0EA371] text-white">
+                      <CheckCircle2 className="w-4 h-4 mr-1.5" /> Approve Phase B
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {phaseBRunning && <Banner kind="running" title="Phase B running…" desc="Generating blogs / SEO / emails based on your selection." />}
+          {run.status === "failed" && <Banner kind="failed" title="Pipeline failed" desc={run.error} />}
+        </TabsContent>
+
+        {/* EXPORTS */}
+        <TabsContent value="exports" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {FORMATS.map((f) => {
+              const existing = completedExports[f.key];
+              return (
+                <div key={f.key} className="rounded-xl border border-ink-border bg-ink-surface p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${f.color}20`, color: f.color, border: `1px solid ${f.color}40` }}>
+                    <f.Icon className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-ink-text">{f.label}</div>
+                    <div className="text-xs text-ink-muted">{existing ? `${Math.round((existing.size || 0) / 1024)} KB · generated` : "Not generated yet"}</div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {existing && (
+                      <a href={api.fileUrl(run.id, existing.filename)} target="_blank" rel="noreferrer" className="text-xs text-brand-secondary hover:text-brand-primary flex items-center gap-1" data-testid={`open-${f.key}`}>
+                        <ExternalLink className="w-3 h-3" /> open
+                      </a>
+                    )}
+                    <Button data-testid={`export-${f.key}`} onClick={() => exportFile(f.key)} disabled={busyFmt === f.key} className="bg-brand-primary hover:bg-[#9333EA] text-white h-9">
+                      {busyFmt === f.key ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Download className="w-4 h-4 mr-1.5" /> {existing ? "Regenerate" : "Generate"}</>}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 text-xs text-ink-muted">All exports are generated server-side by the agent&apos;s exporters (export_pdf · export_docx · export_pptx · export_strategy).</div>
+        </TabsContent>
+      </Tabs>
+    </Shell>
+  );
+}
+
+function Shell({ children }) {
   return (
     <div className="min-h-screen bg-ink-bg">
       <TopNav />
@@ -58,199 +218,70 @@ export default function ContentStudio() {
           <ChevronRight className="w-3 h-3" />
           <Link to="/command-center" className="hover:text-ink-text transition-colors">Command Center</Link>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-ink-text">Content Studio</span>
+          <span className="text-ink-text">Studio</span>
         </div>
-
-        <div className="flex items-end justify-between gap-4 mb-8">
-          <div>
-            <Badge variant="outline" className="border-brand-accent/40 text-brand-accent bg-brand-accent/10 mb-3 text-[10px]">
-              <Sparkles className="w-3 h-3 mr-1" /> AI Content Studio
-            </Badge>
-            <h1 className="font-heading text-4xl font-semibold tracking-tight">Content Studio</h1>
-            <p className="text-ink-muted mt-1.5">Campaign-ready assets in your voice. Edit, copy, or export.</p>
-          </div>
-        </div>
-
-        <Tabs defaultValue="social" className="w-full">
-          <TabsList className="bg-ink-surface border border-ink-border p-1 h-auto">
-            <TabsTrigger data-testid="tab-social" value="social" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">
-              Social Content
-            </TabsTrigger>
-            <TabsTrigger data-testid="tab-files" value="files" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">
-              Strategy Files
-            </TabsTrigger>
-            <TabsTrigger data-testid="tab-master" value="master" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">
-              Master Package
-            </TabsTrigger>
-          </TabsList>
-
-          {/* TAB 1 — Social */}
-          <TabsContent value="social" className="mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              <div className="lg:col-span-3">
-                <div className="rounded-xl border border-ink-border bg-ink-surface p-3 space-y-1 sticky top-20">
-                  <div className="text-[10px] uppercase tracking-wider text-ink-muted px-2 pt-2 pb-1">Categories</div>
-                  {CATEGORIES.map((c) => (
-                    <button
-                      key={c.id}
-                      data-testid={`category-${c.id}`}
-                      onClick={() => setCategory(c.id)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
-                        category === c.id
-                          ? "bg-brand-primary/15 text-brand-primary"
-                          : "text-ink-muted hover:text-ink-text hover:bg-ink-elevated"
-                      }`}
-                    >
-                      <c.icon className="w-4 h-4" style={{ color: category === c.id ? "#A855F7" : c.color }} />
-                      <span className="flex-1 text-left">{c.label}</span>
-                      <Badge variant="outline" className="border-ink-border text-ink-muted text-[10px] px-1.5 py-0">
-                        {c.items.length}
-                      </Badge>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="lg:col-span-9 space-y-4">
-                {current.items.map((item, i) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.06 }}
-                    data-testid={`content-item-${item.id}`}
-                    className="rounded-xl border border-ink-border bg-ink-surface overflow-hidden hover:border-brand-primary/40 transition-colors"
-                  >
-                    <div className="px-5 py-3 border-b border-ink-border flex items-center justify-between bg-ink-bg/30">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: `${current.color}20`, color: current.color }}>
-                          <current.icon className="w-3.5 h-3.5" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm text-ink-text">{item.title}</div>
-                          <div className="text-[11px] text-ink-muted">{item.meta}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button onClick={() => handleCopy(item.preview)} data-testid={`copy-${item.id}`} variant="ghost" size="sm" className="text-ink-muted hover:text-ink-text hover:bg-ink-elevated h-8">
-                          <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy
-                        </Button>
-                        <Button data-testid={`edit-${item.id}`} variant="ghost" size="sm" className="text-ink-muted hover:text-ink-text hover:bg-ink-elevated h-8">
-                          <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit
-                        </Button>
-                        <Button onClick={() => handleDownload(item.title)} data-testid={`download-${item.id}`} variant="ghost" size="sm" className="text-ink-muted hover:text-ink-text hover:bg-ink-elevated h-8">
-                          <Download className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="px-5 py-4">
-                      <pre className="text-sm text-ink-text/90 leading-relaxed whitespace-pre-wrap font-sans">{item.preview}</pre>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* TAB 2 — Strategy Files */}
-          <TabsContent value="files" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {STRATEGY_FILES.map((f) => {
-                const Icon = FILE_ICONS[f.icon] || FileText;
-                return (
-                  <div key={f.name} data-testid={`file-${f.name}`} className="rounded-xl border border-ink-border bg-ink-surface p-5 hover:border-brand-primary/40 transition-colors flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${f.color}20`, color: f.color, border: `1px solid ${f.color}40` }}>
-                      <Icon className="w-7 h-7" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-ink-text">{f.name}</div>
-                      <div className="text-xs text-ink-muted mt-0.5">{f.size} · Generated 2 min ago</div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" data-testid={`preview-${f.name}`} className="text-ink-muted hover:text-ink-text hover:bg-ink-elevated">
-                        <Eye className="w-3.5 h-3.5 mr-1.5" /> Preview
-                      </Button>
-                      <Button onClick={() => handleDownload(f.name)} data-testid={`dl-${f.name}`} className="bg-brand-primary hover:bg-[#9333EA] text-white">
-                        <Download className="w-3.5 h-3.5 mr-1.5" /> Download
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </TabsContent>
-
-          {/* TAB 3 — Master */}
-          <TabsContent value="master" className="mt-6">
-            <div className="rounded-3xl border border-brand-primary/40 bg-gradient-to-br from-brand-primary/15 via-ink-surface to-brand-accent/15 p-10 relative overflow-hidden">
-              <div className="absolute inset-0 grid-bg opacity-30" />
-              <div
-                className="absolute -top-32 -right-32 w-96 h-96 rounded-full blur-[120px] opacity-40 pointer-events-none"
-                style={{ background: "radial-gradient(circle, #E879F9 0%, transparent 60%)" }}
-              />
-              <div className="relative grid md:grid-cols-2 gap-8 items-center">
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.2em] text-brand-secondary mb-3">Master Package</div>
-                  <h2 className="font-heading text-4xl font-semibold tracking-tight">Download Complete GTM Package</h2>
-                  <p className="text-ink-muted mt-3 text-base leading-relaxed">
-                    Everything you need to launch — strategy, content, files, and assets — bundled into a single ZIP.
-                    Hand it to your team, your board, or your agency.
-                  </p>
-                  <ul className="mt-6 space-y-2.5">
-                    {[
-                      "Full GTM Strategy (PDF + PPTX)",
-                      "Budget & Resource Plan (XLSX)",
-                      "30/60/90 Campaign Calendar (ICS)",
-                      "18 Content Assets (MD + DOCX)",
-                      "Brand voice guide + tone library",
-                      "ICP & persona JSON for HubSpot / Salesforce",
-                    ].map((it) => (
-                      <li key={it} className="flex items-center gap-2 text-sm text-ink-text/90">
-                        <div className="w-4 h-4 rounded-full bg-brand-success/20 border border-brand-success/40 flex items-center justify-center">
-                          <div className="w-1.5 h-1.5 rounded-full bg-brand-success" />
-                        </div>
-                        {it}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button onClick={() => handleDownload("GTM_Master_Package.zip")} data-testid="master-download" size="lg" className="mt-7 bg-brand-primary hover:bg-[#9333EA] text-white shadow-xl shadow-brand-primary/40 px-7 py-6 text-base">
-                    <Archive className="mr-2 w-4 h-4" /> Download Master ZIP (38.4 MB)
-                  </Button>
-                </div>
-                <div className="relative flex items-center justify-center">
-                  <div className="w-72 h-72 rounded-3xl bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center glow-primary">
-                    <Package className="w-32 h-32 text-white/90" />
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 w-20 h-20 rounded-2xl bg-ink-surface border border-ink-border flex items-center justify-center">
-                    <div className="font-heading text-2xl font-bold text-gradient-ai">.zip</div>
-                  </div>
-                  <div className="absolute -top-2 -left-2 px-3 py-1.5 rounded-full bg-ink-surface border border-brand-success/40 text-xs text-brand-success">
-                    Ready to ship
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
-              {[
-                { label: "ZIP Package", value: "38.4 MB", icon: Archive, color: "#A855F7" },
-                { label: "All Assets", value: "47 files", icon: FileText, color: "#22D3EE" },
-                { label: "All Content", value: "18 posts", icon: Megaphone, color: "#E879F9" },
-              ].map((s) => (
-                <div key={s.label} className="rounded-xl border border-ink-border bg-ink-surface p-5 flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${s.color}20`, color: s.color }}>
-                    <s.icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-ink-muted">{s.label}</div>
-                    <div className="font-heading text-lg font-semibold text-ink-text">{s.value}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+        {children}
       </main>
+    </div>
+  );
+}
+
+function Empty({ title, desc, cta, onClick }) {
+  return (
+    <div className="rounded-xl border border-dashed border-ink-border bg-ink-surface/30 p-10 text-center" data-testid="studio-empty">
+      <Sparkles className="w-8 h-8 mx-auto mb-3 text-brand-accent" />
+      <div className="font-heading text-lg text-ink-text">{title}</div>
+      <p className="text-sm text-ink-muted mt-1 mb-4">{desc}</p>
+      <Button onClick={onClick} className="bg-brand-primary hover:bg-[#9333EA] text-white">{cta} <ArrowRight className="ml-2 w-4 h-4" /></Button>
+    </div>
+  );
+}
+
+function ContentGroup({ title, Icon, items, emptyText }) {
+  if (!items || items.length === 0) {
+    if (emptyText) return (
+      <div>
+        <div className="flex items-center gap-2 mb-3"><Icon className="w-4 h-4 text-brand-primary" /><h3 className="font-heading text-lg font-semibold">{title}</h3></div>
+        <div className="rounded-xl border border-dashed border-ink-border p-5 text-sm text-ink-muted text-center">{emptyText}</div>
+      </div>
+    );
+    return null;
+  }
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3"><Icon className="w-4 h-4 text-brand-primary" /><h3 className="font-heading text-lg font-semibold">{title}</h3><span className="text-xs text-ink-muted">({items.length})</span></div>
+      <div className="space-y-3">
+        {items.map((it) => (
+          <motion.div key={it.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-ink-border bg-ink-surface overflow-hidden">
+            <div className="px-5 py-3 border-b border-ink-border bg-ink-bg/30 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-medium text-sm text-ink-text truncate">{it.heading}</div>
+                {it.meta && <div className="text-[11px] text-ink-muted truncate">{it.meta}</div>}
+              </div>
+              <Button onClick={() => { navigator.clipboard?.writeText(it.body || ""); toast.success("Copied to clipboard"); }} data-testid={`copy-${it.id}`} variant="ghost" size="sm" className="text-ink-muted hover:text-ink-text hover:bg-ink-elevated h-8 shrink-0">
+                <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy
+              </Button>
+            </div>
+            <div className="px-5 py-4">
+              <pre className="text-sm text-ink-text/90 leading-relaxed whitespace-pre-wrap font-sans">{it.body}</pre>
+              {it.footer && <div className="mt-3 pt-3 border-t border-ink-border text-xs text-ink-muted">{it.footer}</div>}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Banner({ kind, title, desc }) {
+  const Icon = kind === "running" ? Loader2 : AlertTriangle;
+  const tone = kind === "running" ? "border-brand-accent/40 bg-brand-accent/5 text-brand-accent" : "border-red-400/40 bg-red-400/5 text-red-400";
+  return (
+    <div className={`rounded-xl border p-5 ${tone}`} data-testid={`stage-${kind}`}>
+      <div className="flex items-center gap-3">
+        <Icon className={`w-5 h-5 ${kind === "running" ? "animate-spin" : ""}`} />
+        <div><div className="font-medium text-ink-text">{title}</div><div className="text-xs text-ink-muted">{desc}</div></div>
+      </div>
     </div>
   );
 }

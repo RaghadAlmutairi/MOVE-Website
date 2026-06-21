@@ -1,351 +1,444 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Globe,
-  Building2,
-  Loader2,
-  ArrowRight,
-  Target,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  Lightbulb,
-  Sparkles,
-  ChevronRight,
+  Globe, MessageSquare, Loader2, ArrowRight, Sparkles, ChevronRight, CheckCircle2, RefreshCw,
+  AlertTriangle, TrendingUp, Lightbulb, ShieldAlert, ExternalLink, Users,
 } from "lucide-react";
-import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Area, AreaChart } from "recharts";
+import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { COMPANY_PROFILE, KPIS, COMPETITORS, TREND_DATA, MARKET_SIGNALS } from "@/lib/mockData";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useRun } from "@/lib/RunContext";
+import { api } from "@/lib/api";
+import { getReportView, getSources } from "@/lib/transforms";
 
 export default function CompanyResearch() {
   const navigate = useNavigate();
-  const [name, setName] = useState("Northwind AI");
-  const [url, setUrl] = useState("northwind.ai");
-  const [loading, setLoading] = useState(false);
-  const [hasResult, setHasResult] = useState(true);
+  const { run, startRun, mutate } = useRun();
+  const [query, setQuery] = useState("");
+  const [url, setUrl] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const analyze = () => {
-    setLoading(true);
-    setHasResult(false);
-    setTimeout(() => {
-      setLoading(false);
-      setHasResult(true);
-    }, 1400);
+  const status = run?.status;
+  const stage = run?.stage;
+  const result = run?.result;
+  const view = useMemo(() => (result ? getReportView(result) : null), [result]);
+  const sources = useMemo(() => (result ? getSources(result) : []), [result]);
+
+  const isResearchRunning = status === "running" && stage === "research";
+  const isAwaiting = status === "awaiting_research_approval";
+  const isFailed = status === "failed";
+
+  const onAnalyze = async () => {
+    if (!query.trim()) { toast.error("Please enter a research query"); return; }
+    setSubmitting(true);
+    try {
+      await startRun(query.trim(), url.trim());
+      toast.success("Research started", { description: "This typically takes 60–120 seconds." });
+    } catch (e) { toast.error("Could not start", { description: e.message }); }
+    finally { setSubmitting(false); }
+  };
+
+  const onApprove = async (runStrategy, runContent) => {
+    if (!run) return;
+    try {
+      await mutate(() => api.approveResearch(run.id, runStrategy, runContent));
+      toast.success("Research approved", { description: "Strategy + Phase A starting in parallel." });
+      navigate("/ideation");
+    } catch (e) { toast.error("Approval failed", { description: e.message }); }
+  };
+
+  const onRegenerate = async () => {
+    if (!run) return;
+    try {
+      await mutate(() => api.regenerateResearch(run.id));
+      toast.success("Regenerating research…");
+    } catch (e) { toast.error("Regenerate failed", { description: e.message }); }
   };
 
   return (
     <div className="min-h-screen bg-ink-bg">
       <TopNav />
       <main className="max-w-[1600px] mx-auto px-6 lg:px-10 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs text-ink-muted mb-6">
-          <Link to="/" className="hover:text-ink-text transition-colors">Home</Link>
-          <ChevronRight className="w-3 h-3" />
-          <span className="text-ink-text">Company Research</span>
-        </div>
+        <Breadcrumb crumbs={[{ to: "/", label: "Home" }, { label: "Research" }]} />
 
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-heading text-4xl font-semibold tracking-tight">Company Research</h1>
-            <p className="text-ink-muted mt-1">Drop a URL. We map the market in seconds.</p>
+            <h1 className="font-heading text-4xl font-semibold tracking-tight">Research</h1>
+            <p className="text-ink-muted mt-1">Describe the market or company to research. The research agent will run a routed, multi-tool pass and synthesise a report.</p>
           </div>
           <Badge variant="outline" className="border-brand-success/40 text-brand-success bg-brand-success/10 w-fit">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-success mr-2 animate-pulse" /> Engine online
           </Badge>
         </div>
 
-        {/* Input panel */}
+        {/* Query form */}
         <div className="rounded-xl border border-ink-border bg-ink-surface p-5 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            <div className="md:col-span-5">
-              <label className="text-xs uppercase tracking-wider text-ink-muted mb-1.5 block">Company Name</label>
+            <div className="md:col-span-7">
+              <label className="text-xs uppercase tracking-wider text-ink-muted mb-1.5 block">Research query</label>
               <div className="relative">
-                <Building2 className="absolute left-3 top-2.5 w-4 h-4 text-ink-muted" />
-                <Input
-                  data-testid="research-company-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="pl-9 bg-ink-bg border-ink-border text-ink-text"
-                />
+                <MessageSquare className="absolute left-3 top-2.5 w-4 h-4 text-ink-muted" />
+                <Input data-testid="research-query" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g., 'GTM strategy for an AI consulting firm in EMEA'" className="pl-9 bg-ink-bg border-ink-border text-ink-text" />
               </div>
             </div>
-            <div className="md:col-span-5">
-              <label className="text-xs uppercase tracking-wider text-ink-muted mb-1.5 block">Website URL</label>
+            <div className="md:col-span-3">
+              <label className="text-xs uppercase tracking-wider text-ink-muted mb-1.5 block">Company URL (optional)</label>
               <div className="relative">
                 <Globe className="absolute left-3 top-2.5 w-4 h-4 text-ink-muted" />
-                <Input
-                  data-testid="research-website"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="pl-9 bg-ink-bg border-ink-border text-ink-text"
-                />
+                <Input data-testid="research-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" className="pl-9 bg-ink-bg border-ink-border text-ink-text" />
               </div>
             </div>
             <div className="md:col-span-2">
-              <Button
-                onClick={analyze}
-                disabled={loading}
-                data-testid="research-analyze-btn"
-                className="w-full bg-brand-primary hover:bg-[#9333EA] text-white shadow-lg shadow-brand-primary/30"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-1.5" />Analyze</>}
+              <Button onClick={onAnalyze} disabled={submitting || isResearchRunning} data-testid="research-analyze-btn" className="w-full bg-brand-primary hover:bg-[#9333EA] text-white shadow-lg shadow-brand-primary/30">
+                {submitting || isResearchRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-1.5" />Run Research</>}
               </Button>
             </div>
           </div>
         </div>
 
-        {hasResult && (
+        {/* States */}
+        {isResearchRunning && <StageBanner kind="running" title="Research agent is working…" desc="Routing tools, gathering evidence, synthesising the report." />}
+        {isFailed && <StageBanner kind="failed" title="Research failed" desc={run.error || "Try again or refine your query."} />}
+
+        {/* Empty state */}
+        {!run && !submitting && <EmptyState />}
+
+        {/* Result */}
+        {view && (
           <>
-            {/* KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {KPIS.map((k, i) => (
-                <motion.div
-                  key={k.label}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.06 }}
-                  data-testid={`kpi-${k.label.toLowerCase().replace(/ /g, "-")}`}
-                  className="rounded-xl border border-ink-border bg-ink-surface p-5 hover:border-brand-primary/40 transition-colors"
-                >
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">{k.label}</div>
-                  <div className="font-heading text-4xl font-semibold mt-1 text-ink-text">{k.value}</div>
-                  <div className="mt-3 h-1.5 rounded-full bg-ink-elevated overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-brand-primary to-brand-accent"
-                      style={{ width: `${k.value}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 text-xs text-ink-muted">{k.delta}</div>
-                </motion.div>
-              ))}
-            </div>
+            <ReportHeader view={view} />
 
-            {/* 3-panel layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-10">
-              {/* LEFT: Company Overview */}
-              <div className="lg:col-span-4 space-y-5">
-                <PanelTitle>Company Overview</PanelTitle>
-                <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
-                  <h3 className="font-heading text-lg font-semibold mb-1">{COMPANY_PROFILE.name}</h3>
-                  <p className="text-xs text-ink-muted mb-3">{COMPANY_PROFILE.tagline}</p>
-                  <p className="text-sm text-ink-text/90 leading-relaxed">{COMPANY_PROFILE.overview}</p>
-                </div>
+            <Tabs defaultValue="report" className="mt-8">
+              <TabsList className="bg-ink-surface border border-ink-border p-1 h-auto">
+                <TabsTrigger data-testid="tab-report" value="report" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Report</TabsTrigger>
+                <TabsTrigger data-testid="tab-competitors" value="competitors" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Competitors</TabsTrigger>
+                <TabsTrigger data-testid="tab-personas" value="personas" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Personas</TabsTrigger>
+                <TabsTrigger data-testid="tab-sources" value="sources" className="data-[state=active]:bg-ink-elevated data-[state=active]:text-ink-text text-ink-muted px-5">Sources ({sources.length})</TabsTrigger>
+              </TabsList>
 
-                <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
-                  <div className="text-xs uppercase tracking-wider text-ink-muted mb-3">Products & Services</div>
-                  <div className="space-y-2">
-                    {COMPANY_PROFILE.products.map((p) => (
-                      <div key={p.name} className="flex items-start gap-3 p-2 rounded-md hover:bg-ink-elevated transition-colors">
-                        <div className="w-7 h-7 rounded-md bg-brand-primary/15 text-brand-primary flex items-center justify-center font-heading text-xs font-semibold mt-0.5">
-                          {p.name[0]}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-ink-text">{p.name}</div>
-                          <div className="text-xs text-ink-muted">{p.desc}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              <TabsContent value="report" className="mt-6">
+                <ReportTab view={view} />
+              </TabsContent>
+              <TabsContent value="competitors" className="mt-6">
+                <CompetitorsTab view={view} />
+              </TabsContent>
+              <TabsContent value="personas" className="mt-6">
+                <PersonasTab view={view} />
+              </TabsContent>
+              <TabsContent value="sources" className="mt-6">
+                <SourcesTab sources={sources} />
+              </TabsContent>
+            </Tabs>
 
-                <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
-                  <div className="text-xs uppercase tracking-wider text-ink-muted mb-3">Value Proposition</div>
-                  <ul className="space-y-2.5">
-                    {COMPANY_PROFILE.valueProps.map((v) => (
-                      <li key={v} className="flex items-start gap-2 text-sm text-ink-text/90">
-                        <div className="w-1.5 h-1.5 rounded-full bg-brand-secondary mt-1.5 shrink-0" />
-                        {v}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            {/* HITL gate */}
+            {isAwaiting && (
+              <ApprovalBar onApprove={onApprove} onRegenerate={onRegenerate} />
+            )}
 
-                <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
-                  <div className="text-xs uppercase tracking-wider text-ink-muted mb-3">Target Audience</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {COMPANY_PROFILE.audience.map((a) => (
-                      <span key={a} className="text-xs px-2.5 py-1 rounded-full bg-ink-elevated border border-ink-border text-ink-text/90">{a}</span>
-                    ))}
-                  </div>
+            {/* After approval, allow user to navigate forward */}
+            {!isAwaiting && status && status !== "running" && status !== "failed" && (
+              <div className="mt-10 rounded-xl border border-brand-primary/40 bg-brand-primary/10 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <div className="font-heading text-lg text-ink-text">Research approved · {labelForStatus(status)}</div>
+                  <div className="text-sm text-ink-muted">Move to Strategy & Content to monitor the next stages.</div>
                 </div>
+                <Button onClick={() => navigate("/ideation")} className="bg-brand-primary hover:bg-[#9333EA] text-white" data-testid="research-go-ideation">
+                  Open Strategy & Content <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
               </div>
-
-              {/* CENTER: Competitors */}
-              <div className="lg:col-span-5 space-y-5">
-                <PanelTitle>Competitor Discovery</PanelTitle>
-                <div className="space-y-3">
-                  {COMPETITORS.map((c, i) => (
-                    <motion.div
-                      key={c.name}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: i * 0.05 }}
-                      data-testid={`competitor-${c.name.toLowerCase()}`}
-                      className="rounded-xl border border-ink-border bg-ink-surface p-4 hover:border-brand-primary/40 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-primary/20 to-brand-accent/20 border border-brand-primary/30 flex items-center justify-center font-heading font-semibold text-brand-primary">
-                          {c.logo}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="font-medium text-ink-text">{c.name}</div>
-                            <span className="font-mono text-xs text-brand-secondary">{c.strength}/100</span>
-                          </div>
-                          <div className="text-xs text-ink-muted mt-0.5">{c.focus} · {c.funding}</div>
-                          <div className="mt-2 h-1 rounded-full bg-ink-elevated overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-brand-secondary to-brand-accent"
-                              style={{ width: `${c.strength}%` }}
-                            />
-                          </div>
-                          <div className="mt-2 text-xs text-ink-muted flex items-start gap-1.5">
-                            <Target className="w-3 h-3 mt-0.5 text-brand-warning shrink-0" />
-                            <span className="text-ink-text/80">Weakness:</span> {c.weakness}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-xs uppercase tracking-wider text-ink-muted">Market Positioning</div>
-                    <span className="text-[10px] font-mono text-brand-secondary">Differentiation index</span>
-                  </div>
-                  <div className="relative h-44 rounded-lg border border-ink-border/60 bg-ink-bg/40 overflow-hidden">
-                    <div className="absolute inset-0 grid-bg opacity-50" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-ink-muted">Premium / Agentic</div>
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-ink-muted">Commodity / Manual</div>
-                      <div className="absolute top-1/2 left-2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-ink-muted -rotate-90 origin-left">Niche</div>
-                      <div className="absolute top-1/2 right-2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-ink-muted rotate-90 origin-right">Broad</div>
-                    </div>
-                    {[
-                      { x: 70, y: 24, l: "Northwind", c: "#A855F7", size: 14 },
-                      { x: 56, y: 38, l: "Clay", c: "#22D3EE", size: 11 },
-                      { x: 78, y: 56, l: "Apollo", c: "#E879F9", size: 12 },
-                      { x: 32, y: 70, l: "Outreach", c: "#F59E0B", size: 10 },
-                      { x: 26, y: 50, l: "Salesloft", c: "#10B981", size: 9 },
-                      { x: 18, y: 30, l: "C-Room", c: "#EC4899", size: 8 },
-                    ].map((d) => (
-                      <div
-                        key={d.l}
-                        className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full text-[9px] font-medium text-white"
-                        style={{
-                          left: `${d.x}%`,
-                          top: `${d.y}%`,
-                          width: d.size + 18,
-                          height: d.size + 18,
-                          background: d.c,
-                          opacity: 0.85,
-                        }}
-                      >
-                        {d.l}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* RIGHT: Industry trends + signals */}
-              <div className="lg:col-span-3 space-y-5">
-                <PanelTitle>Industry Trends</PanelTitle>
-                <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
-                  <div className="text-xs uppercase tracking-wider text-ink-muted mb-2">Momentum (8 mo)</div>
-                  <div className="h-32 -ml-3">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={TREND_DATA}>
-                        <defs>
-                          <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#A855F7" stopOpacity={0.45} />
-                            <stop offset="100%" stopColor="#A855F7" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <Area type="monotone" dataKey="search" stroke="#A855F7" strokeWidth={2} fill="url(#g1)" />
-                        <Tooltip contentStyle={{ background: "#15101F", border: "1px solid #2A1F3D", borderRadius: 8, fontSize: 12 }} />
-                        <XAxis dataKey="month" stroke="#A89FB8" fontSize={10} tickLine={false} axisLine={false} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="text-xs text-brand-success font-medium mt-2 flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" /> +118% YoY interest growth
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
-                  <div className="text-xs uppercase tracking-wider text-ink-muted mb-3">Market Signals</div>
-                  <div className="space-y-2.5">
-                    {MARKET_SIGNALS.map((s) => (
-                      <div key={s.text} className="flex items-start gap-2 text-xs">
-                        {s.type === "opportunity" ? (
-                          <Lightbulb className="w-3.5 h-3.5 text-brand-success mt-0.5 shrink-0" />
-                        ) : (
-                          <AlertTriangle className="w-3.5 h-3.5 text-brand-warning mt-0.5 shrink-0" />
-                        )}
-                        <span className="text-ink-text/90 leading-relaxed">{s.text}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
-                  <div className="text-xs uppercase tracking-wider text-ink-muted mb-3">Opportunities vs Risks</div>
-                  <div className="flex items-end gap-3 h-20">
-                    <div className="flex-1 flex flex-col items-center justify-end">
-                      <div className="w-full rounded-t bg-gradient-to-t from-brand-success/40 to-brand-success" style={{ height: "68%" }} />
-                      <div className="text-[10px] mt-1.5 text-ink-muted">Opp</div>
-                    </div>
-                    <div className="flex-1 flex flex-col items-center justify-end">
-                      <div className="w-full rounded-t bg-gradient-to-t from-brand-warning/40 to-brand-warning" style={{ height: "38%" }} />
-                      <div className="text-[10px] mt-1.5 text-ink-muted">Risk</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom CTA */}
-            <div className="rounded-2xl border border-brand-primary/40 bg-gradient-to-r from-brand-primary/15 via-brand-accent/10 to-brand-secondary/15 p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
-                <h3 className="font-heading text-2xl font-semibold">Ready to turn research into revenue?</h3>
-                <p className="text-ink-muted mt-1">We&apos;ve assembled enough signal. Let&apos;s design your GTM motion.</p>
-              </div>
-              <Button
-                onClick={() => navigate("/ideation")}
-                data-testid="research-to-ideation-cta"
-                size="lg"
-                className="bg-brand-primary hover:bg-[#9333EA] text-white shadow-xl shadow-brand-primary/40"
-              >
-                Start Your GTM Strategy <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </div>
+            )}
           </>
-        )}
-
-        {loading && (
-          <div className="flex items-center justify-center py-32 gap-3 text-ink-muted">
-            <Loader2 className="w-5 h-5 animate-spin text-brand-primary" />
-            <span>Crawling sources, distilling signals...</span>
-          </div>
         )}
       </main>
     </div>
   );
 }
 
-function PanelTitle({ children }) {
+// ── Sub-components ─────────────────────────────────────────────────────────────
+function Breadcrumb({ crumbs }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="h-px flex-1 bg-gradient-to-r from-brand-primary/0 via-brand-primary/40 to-brand-primary/0" />
-      <div className="text-[11px] uppercase tracking-[0.22em] text-ink-muted">{children}</div>
-      <div className="h-px flex-1 bg-gradient-to-r from-brand-primary/0 via-brand-primary/40 to-brand-primary/0" />
+    <div className="flex items-center gap-2 text-xs text-ink-muted mb-6">
+      {crumbs.map((c, i) => (
+        <span key={c.label} className="flex items-center gap-2">
+          {c.to ? <Link to={c.to} className="hover:text-ink-text transition-colors">{c.label}</Link> : <span className="text-ink-text">{c.label}</span>}
+          {i < crumbs.length - 1 && <ChevronRight className="w-3 h-3" />}
+        </span>
+      ))}
     </div>
   );
+}
+
+function EmptyState() {
+  return (
+    <div className="rounded-xl border border-dashed border-ink-border bg-ink-surface/30 p-10 text-center text-ink-muted" data-testid="empty-state">
+      <Sparkles className="w-8 h-8 mx-auto mb-3 text-brand-accent" />
+      <div className="font-heading text-lg text-ink-text">Ready when you are</div>
+      <p className="text-sm mt-1">Submit a research query above to kick off the multi-agent pipeline.</p>
+    </div>
+  );
+}
+
+function StageBanner({ kind, title, desc }) {
+  const Icon = kind === "running" ? Loader2 : kind === "failed" ? AlertTriangle : CheckCircle2;
+  const tone = kind === "running" ? "border-brand-accent/40 bg-brand-accent/5 text-brand-accent"
+            : kind === "failed" ? "border-red-400/40 bg-red-400/5 text-red-400"
+            : "border-brand-success/40 bg-brand-success/5 text-brand-success";
+  return (
+    <div className={`rounded-xl border p-5 mb-6 ${tone}`} data-testid={`stage-${kind}`}>
+      <div className="flex items-center gap-3">
+        <Icon className={`w-5 h-5 ${kind === "running" ? "animate-spin" : ""}`} />
+        <div>
+          <div className="font-medium text-ink-text">{title}</div>
+          <div className="text-xs text-ink-muted">{desc}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReportHeader({ view }) {
+  const confColor = view.confidence === "high" ? "text-brand-success" : view.confidence === "low" ? "text-brand-warning" : "text-brand-secondary";
+  return (
+    <div className="rounded-xl border border-ink-border bg-ink-surface p-6 mb-2">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <Badge variant="outline" className="border-brand-accent/40 text-brand-accent bg-brand-accent/10 mb-2 text-[10px]">
+            <Sparkles className="w-3 h-3 mr-1" /> Research report
+          </Badge>
+          <h2 className="font-heading text-2xl font-semibold text-ink-text">{view.title || "Untitled"}</h2>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted mt-1">
+            {view.industry && <span>{view.industry}</span>}
+            {view.geography && <span>· {view.geography}</span>}
+            {view.confidence && <span>· Confidence: <span className={`font-medium ${confColor}`}>{view.confidence}</span></span>}
+          </div>
+        </div>
+      </div>
+      {view.evidenceLimitation && (
+        <div className="mt-4 rounded-md border border-brand-warning/30 bg-brand-warning/5 px-3 py-2 text-xs text-brand-warning flex items-start gap-2">
+          <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{view.evidenceLimitation}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReportTab({ view }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="lg:col-span-7 space-y-5">
+        {view.executiveSummary && (
+          <Section title="Executive Summary">
+            <p className="text-sm text-ink-text/90 leading-relaxed whitespace-pre-wrap">{view.executiveSummary}</p>
+          </Section>
+        )}
+        <Section title="SWOT">
+          <div className="grid grid-cols-2 gap-3">
+            <SwotBox title="Strengths" items={view.swot.strengths} tone="success" />
+            <SwotBox title="Weaknesses" items={view.swot.weaknesses} tone="warning" />
+            <SwotBox title="Opportunities" items={view.swot.opportunities} tone="primary" />
+            <SwotBox title="Threats" items={view.swot.threats} tone="danger" />
+          </div>
+        </Section>
+      </div>
+      <div className="lg:col-span-5 space-y-5">
+        {view.trends.length > 0 && <ListSection title="Market Trends" items={view.trends} icon={TrendingUp} />}
+        {view.opportunities.length > 0 && <ListSection title="Opportunities" items={view.opportunities} icon={Lightbulb} tone="success" />}
+        {view.risks.length > 0 && <ListSection title="Risks" items={view.risks} icon={AlertTriangle} tone="warning" />}
+        {view.recommendations.length > 0 && <ListSection title="Recommendations" items={view.recommendations} icon={CheckCircle2} tone="primary" />}
+      </div>
+    </div>
+  );
+}
+
+function CompetitorsTab({ view }) {
+  const groups = [
+    { title: "Company competitors", items: view.companyCompetitors },
+    { title: "Product competitors", items: view.productCompetitors },
+    { title: "Alternative solutions", items: view.alternatives },
+  ].filter((g) => g.items.length > 0);
+  if (groups.length === 0) return <EmptyText text="No competitors were surfaced." />;
+  return (
+    <div className="space-y-6">
+      {groups.map((g) => (
+        <div key={g.title}>
+          <div className="text-xs uppercase tracking-wider text-ink-muted mb-3">{g.title}</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {g.items.map((c) => <CompetitorCard key={c.name} c={c} />)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CompetitorCard({ c }) {
+  return (
+    <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div>
+          <div className="font-heading font-semibold text-ink-text">{c.name}</div>
+          <div className="text-xs text-ink-muted">{c.entity_type}{c.parent_company ? ` · ${c.parent_company}` : ""}{c.directness ? ` · ${c.directness}` : ""}</div>
+        </div>
+        {c.official_website && (
+          <a href={c.official_website} target="_blank" rel="noreferrer" className="text-brand-secondary hover:text-brand-primary text-xs flex items-center gap-1">
+            <ExternalLink className="w-3 h-3" /> site
+          </a>
+        )}
+      </div>
+      {c.value_proposition && <p className="text-sm text-ink-text/90 leading-relaxed mt-1 line-clamp-4">{c.value_proposition}</p>}
+      {c.target_audience && <p className="text-xs text-ink-muted mt-2"><span className="text-ink-text/80">Audience:</span> {c.target_audience}</p>}
+      {c.key_features?.length > 0 && (
+        <div className="mt-3">
+          <div className="text-[10px] uppercase tracking-wider text-ink-muted mb-1.5">Key features</div>
+          <div className="flex flex-wrap gap-1.5">
+            {c.key_features.map((f) => <span key={f} className="text-[11px] px-2 py-0.5 rounded-full bg-ink-elevated border border-ink-border">{f}</span>)}
+          </div>
+        </div>
+      )}
+      {c.differentiators_usp?.length > 0 && (
+        <div className="mt-3 text-xs">
+          <span className="text-ink-muted">USP:</span> <span className="text-ink-text/90">{c.differentiators_usp.join(" · ")}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PersonasTab({ view }) {
+  if (view.personas.length === 0) return <EmptyText text="No buyer personas were surfaced." />;
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {view.personas.map((p) => (
+        <div key={p.persona_name} className="rounded-xl border border-ink-border bg-ink-surface p-5">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-brand-primary/15 border border-brand-primary/30 flex items-center justify-center"><Users className="w-5 h-5 text-brand-primary" /></div>
+            <div className="flex-1 min-w-0">
+              <div className="font-heading font-semibold text-ink-text">{p.persona_name}</div>
+              <div className="text-xs text-ink-muted">{p.role_title}{p.segment ? ` · ${p.segment}` : ""}{p.decision_power && p.decision_power !== "UNKNOWN" ? ` · ${p.decision_power} decision power` : ""}</div>
+            </div>
+          </div>
+          {p.goals?.length > 0 && <MiniList label="Goals" items={p.goals} />}
+          {p.pain_points?.length > 0 && <MiniList label="Pain points" items={p.pain_points} />}
+          {p.buying_triggers?.length > 0 && <MiniList label="Buying triggers" items={p.buying_triggers} />}
+          {p.channels?.length > 0 && (
+            <div className="mt-3"><div className="text-[10px] uppercase tracking-wider text-ink-muted mb-1.5">Channels</div><div className="flex flex-wrap gap-1.5">{p.channels.map((c) => <span key={c} className="text-[11px] px-2 py-0.5 rounded-full bg-ink-elevated border border-ink-border">{c}</span>)}</div></div>
+          )}
+          {p.messaging_angle && <div className="mt-3 text-xs text-ink-text/90 border-t border-ink-border pt-3"><span className="text-ink-muted">Angle:</span> {p.messaging_angle}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MiniList({ label, items }) {
+  return (
+    <div className="mt-2">
+      <div className="text-[10px] uppercase tracking-wider text-ink-muted mb-1">{label}</div>
+      <ul className="text-xs text-ink-text/90 space-y-1">
+        {items.map((i) => <li key={i} className="flex items-start gap-1.5"><span className="w-1 h-1 rounded-full bg-brand-primary mt-1.5 shrink-0" />{i}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function SourcesTab({ sources }) {
+  if (sources.length === 0) return <EmptyText text="No sources captured." />;
+  return (
+    <div className="rounded-xl border border-ink-border bg-ink-surface divide-y divide-ink-border">
+      {sources.map((s) => (
+        <a key={s.id || s.url} href={s.url} target="_blank" rel="noreferrer" className="flex items-start gap-3 p-3 hover:bg-ink-elevated transition-colors">
+          <span className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${s.official ? "bg-brand-success" : "bg-ink-muted"}`} />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm text-ink-text truncate">{s.title || s.url}</div>
+            <div className="text-[11px] text-ink-muted truncate">{s.domain}{s.role ? ` · ${s.role}` : ""}</div>
+          </div>
+          <ExternalLink className="w-3.5 h-3.5 text-ink-muted shrink-0 mt-1" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
+      <div className="text-xs uppercase tracking-wider text-ink-muted mb-3">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function SwotBox({ title, items, tone }) {
+  const toneMap = { success: "text-brand-success", warning: "text-brand-warning", primary: "text-brand-primary", danger: "text-red-400" };
+  return (
+    <div className="rounded-md border border-ink-border bg-ink-bg/40 p-3">
+      <div className={`text-[10px] uppercase tracking-wider mb-1.5 ${toneMap[tone]}`}>{title}</div>
+      <ul className="space-y-1">
+        {items.length === 0 && <li className="text-xs text-ink-muted">—</li>}
+        {items.map((i) => <li key={i.point || JSON.stringify(i)} className="text-xs text-ink-text/90 leading-snug">• {i.point || ""}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function ListSection({ title, items, icon: Icon, tone = "muted" }) {
+  const toneMap = { success: "text-brand-success", warning: "text-brand-warning", primary: "text-brand-primary", muted: "text-ink-muted" };
+  return (
+    <div className="rounded-xl border border-ink-border bg-ink-surface p-5">
+      <div className={`flex items-center gap-2 text-xs uppercase tracking-wider mb-3 ${toneMap[tone]}`}>{Icon && <Icon className="w-3.5 h-3.5" />}{title}</div>
+      <ul className="space-y-2">
+        {items.map((i) => <li key={i} className="flex items-start gap-2 text-sm text-ink-text/90"><div className="w-1.5 h-1.5 rounded-full bg-brand-primary mt-1.5 shrink-0" />{i}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function EmptyText({ text }) { return <div className="rounded-xl border border-dashed border-ink-border p-6 text-sm text-ink-muted text-center">{text}</div>; }
+
+function ApprovalBar({ onApprove, onRegenerate }) {
+  const [runStrategy, setRunStrategy] = useState(true);
+  const [runContent, setRunContent] = useState(true);
+  return (
+    <div className="mt-8 rounded-2xl border border-brand-primary/40 bg-gradient-to-r from-brand-primary/15 via-brand-accent/10 to-brand-secondary/15 p-6">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex-1">
+          <div className="font-heading text-lg text-ink-text">Approve research and continue?</div>
+          <p className="text-sm text-ink-muted mt-1">When you approve, the strategy agent and Phase A content agent start in parallel — matching the agent system&apos;s documented flow.</p>
+          <div className="mt-3 flex flex-wrap gap-3 text-sm">
+            <label className="inline-flex items-center gap-2 cursor-pointer">
+              <input data-testid="opt-strategy" type="checkbox" checked={runStrategy} onChange={(e) => setRunStrategy(e.target.checked)} className="accent-brand-primary" />
+              <span>Generate GTM strategy</span>
+            </label>
+            <label className="inline-flex items-center gap-2 cursor-pointer">
+              <input data-testid="opt-content" type="checkbox" checked={runContent} onChange={(e) => setRunContent(e.target.checked)} className="accent-brand-primary" />
+              <span>Generate marketing content (Phase A)</span>
+            </label>
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={onRegenerate} data-testid="regenerate-research" className="border-ink-border text-ink-text hover:bg-ink-surface">
+            <RefreshCw className="w-4 h-4 mr-1.5" /> Regenerate
+          </Button>
+          <Button onClick={() => onApprove(runStrategy, runContent)} data-testid="approve-research" className="bg-brand-success hover:bg-[#0EA371] text-white shadow-lg shadow-brand-success/30" disabled={!runStrategy && !runContent}>
+            <CheckCircle2 className="w-4 h-4 mr-1.5" /> Approve & continue
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function labelForStatus(s) {
+  return ({
+    awaiting_strategy_approval: "strategy ready for review",
+    awaiting_phase_a_approval: "Phase A ready for review",
+    awaiting_strategy_and_phase_a_approval: "strategy + Phase A ready",
+    ready_for_phase_b: "ready for Phase B",
+    complete: "complete",
+  }[s]) || s;
 }
