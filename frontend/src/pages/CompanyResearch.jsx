@@ -182,11 +182,14 @@ function EmptyState() {
   );
 }
 
+const STAGE_BANNER_STYLE = {
+  running: { Icon: Loader2,        tone: "border-brand-accent/40 bg-brand-accent/5 text-brand-accent" },
+  failed:  { Icon: AlertTriangle,  tone: "border-red-400/40 bg-red-400/5 text-red-400" },
+  success: { Icon: CheckCircle2,   tone: "border-brand-success/40 bg-brand-success/5 text-brand-success" },
+};
+
 function StageBanner({ kind, title, desc }) {
-  const Icon = kind === "running" ? Loader2 : kind === "failed" ? AlertTriangle : CheckCircle2;
-  const tone = kind === "running" ? "border-brand-accent/40 bg-brand-accent/5 text-brand-accent"
-            : kind === "failed" ? "border-red-400/40 bg-red-400/5 text-red-400"
-            : "border-brand-success/40 bg-brand-success/5 text-brand-success";
+  const { Icon, tone } = STAGE_BANNER_STYLE[kind] || STAGE_BANNER_STYLE.success;
   return (
     <div className={`rounded-xl border p-5 mb-6 ${tone}`} data-testid={`stage-${kind}`}>
       <div className="flex items-center gap-3">
@@ -200,8 +203,13 @@ function StageBanner({ kind, title, desc }) {
   );
 }
 
+const CONFIDENCE_COLOR = {
+  high: "text-brand-success",
+  low:  "text-brand-warning",
+};
+
 function ReportHeader({ view }) {
-  const confColor = view.confidence === "high" ? "text-brand-success" : view.confidence === "low" ? "text-brand-warning" : "text-brand-secondary";
+  const confColor = CONFIDENCE_COLOR[view.confidence] || "text-brand-secondary";
   return (
     <div className="rounded-xl border border-ink-border bg-ink-surface p-6 mb-2">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">

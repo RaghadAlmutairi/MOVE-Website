@@ -17,6 +17,16 @@ const LABEL = {
   failed: "Failed",
 };
 
+const HISTORY_DOT = {
+  complete: "bg-brand-success",
+  failed:   "bg-red-400",
+};
+const HISTORY_DOT_DEFAULT = "bg-brand-accent animate-pulse";
+
+function dotClassFor(status) {
+  return HISTORY_DOT[status] || HISTORY_DOT_DEFAULT;
+}
+
 export default function RunStatusPill() {
   const { run, runId, history, setRunId } = useRun();
   const active = run || (runId && history.find((h) => h.id === runId)) || null;
@@ -61,7 +71,7 @@ export default function RunStatusPill() {
         {history.slice(0, 10).map((h) => (
           <DropdownMenuItem key={h.id} onClick={() => setRunId(h.id)} data-testid={`history-item-${h.id}`} className={`cursor-pointer focus:bg-ink-elevated flex-col items-start gap-0.5 py-2 ${h.id === runId ? "bg-ink-elevated" : ""}`}>
             <div className="flex items-center gap-2 w-full">
-              <span className={`w-1.5 h-1.5 rounded-full ${h.status === "complete" ? "bg-brand-success" : h.status === "failed" ? "bg-red-400" : "bg-brand-accent animate-pulse"}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${dotClassFor(h.status)}`} />
               <span className="text-sm flex-1 truncate text-ink-text">{truncate(h.query, 36)}</span>
               <span className="text-[10px] text-ink-muted">{LABEL[h.status] || h.status}</span>
             </div>
