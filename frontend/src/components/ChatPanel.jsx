@@ -17,17 +17,29 @@ const QUICK = {
     "Which channel is highest-leverage?",
     "What's the biggest risk and how do we mitigate it?",
   ],
+  content: [
+    "Which LinkedIn post is strongest?",
+    "Suggest a tighter subject line for the cold email",
+    "What blog topic should we publish first?",
+  ],
 };
 
 const TITLE = {
   research: "Ask about the research",
   strategy: "Ask about the strategy",
+  content: "Ask about the content suite",
+};
+
+const INTRO = {
+  research: "the research report",
+  strategy: "the GTM strategy",
+  content: "the generated content suite",
 };
 
 export default function ChatPanel({ scope = "research", className = "" }) {
   const { runId, run } = useRun();
   const [messages, setMessages] = useState([
-    { id: "intro", role: "assistant", content: `Hi — I have ${scope === "research" ? "the research report" : "the GTM strategy"} loaded. Ask me anything about it.` },
+    { id: "intro", role: "assistant", content: `Hi — I have ${INTRO[scope] || "the run"} loaded. Ask me anything about it.` },
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -64,8 +76,8 @@ export default function ChatPanel({ scope = "research", className = "" }) {
           <Sparkles className="w-3.5 h-3.5 text-white" />
         </div>
         <div>
-          <div className="font-semibold text-sm text-ink-text">{TITLE[scope]}</div>
-          <div className="text-[11px] text-ink-muted">Grounded in this run's data only</div>
+          <div className="font-semibold text-sm text-ink-text">{TITLE[scope] || "Ask the agent"}</div>
+          <div className="text-[11px] text-ink-muted">Grounded in this run&apos;s data only</div>
         </div>
       </div>
 
@@ -88,7 +100,7 @@ export default function ChatPanel({ scope = "research", className = "" }) {
 
       {ready && (
         <div className="px-5 pb-2.5 flex flex-wrap gap-1.5">
-          {QUICK[scope].map((p) => (
+          {(QUICK[scope] || []).map((p) => (
             <button key={p} onClick={() => send(p)} disabled={sending} data-testid={`chat-quick-${p.slice(0,10)}`} className="text-[11px] px-2.5 py-1 rounded-full bg-ink-elevated border border-ink-border text-ink-muted hover:text-ink-text hover:border-brand-primary/50 transition-colors disabled:opacity-40">
               {p}
             </button>
