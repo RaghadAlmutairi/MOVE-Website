@@ -159,6 +159,46 @@ async def regenerate_research(run_id: str):
     return await get_run(run_id)
 
 
+# ── Strategy direction gate ────────────────────────────────────────────────
+class StartStrategyRequest(BaseModel):
+    direction: str = Field(min_length=2, max_length=1200)
+    custom: Optional[bool] = False
+
+
+@api.get("/runs/{run_id}/strategy/suggestions")
+async def get_strategy_suggestions(run_id: str):
+    try:
+        items = wo.suggest_directions(run_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Suggestion failed: {e}")
+    return {"directions": items}
+
+
+@api.post("/runs/{run_id}/strategy/suggestions")
+async def refresh_strategy_suggestions(run_id: str):
+    # Clear cache and regenerate. Caller controls when this happens.
+    doc = await runs.find_one({"id": run_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Run not found")
+    await runs.update_one({"id": run_id}, {"$unset": {"strategy_directions": ""}})
+    try:
+        items = wo.suggest_directions(run_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"directions": items}
+
+
+@api.post("/runs/{run_id}/strategy/start")
+async def start_strategy(run_id: str, body: StartStrategyRequest):
+    try:
+        wo.start_strategy(run_id, body.direction.strip(), custom=bool(body.custom))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return await get_run(run_id)
+
+
 @api.post("/runs/{run_id}/approve_strategy")
 async def approve_strategy(run_id: str):
     _safe_run(wo.approve_strategy, run_id)

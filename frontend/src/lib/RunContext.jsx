@@ -7,6 +7,7 @@ const RunContext = createContext(null);
 const ACTIVE_STATUSES = new Set([
   "running",
   "awaiting_research_approval",
+  "awaiting_strategy_direction",
   "awaiting_strategy_approval",
   "awaiting_content_approval",
 ]);

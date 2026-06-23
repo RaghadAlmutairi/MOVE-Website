@@ -8,6 +8,7 @@ import { useRun } from "@/lib/RunContext";
 const LABEL = {
   running: "Running",
   awaiting_research_approval: "Awaiting research approval",
+  awaiting_strategy_direction: "Choose a strategy direction",
   awaiting_strategy_approval: "Awaiting strategy approval",
   awaiting_content_approval: "Awaiting content approval",
   complete: "Complete",

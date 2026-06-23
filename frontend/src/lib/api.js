@@ -28,6 +28,15 @@ export const api = {
   approveResearch: (id) => req(`/runs/${id}/approve_research`, { method: "POST" }),
   regenerateResearch: (id) => req(`/runs/${id}/regenerate_research`, { method: "POST" }),
 
+  // Strategy direction gate (between research approval and strategy generation)
+  getStrategySuggestions: (id) => req(`/runs/${id}/strategy/suggestions`),
+  refreshStrategySuggestions: (id) => req(`/runs/${id}/strategy/suggestions`, { method: "POST" }),
+  startStrategy: (id, direction, custom = false) =>
+    req(`/runs/${id}/strategy/start`, {
+      method: "POST",
+      body: JSON.stringify({ direction, custom }),
+    }),
+
   approveStrategy: (id) => req(`/runs/${id}/approve_strategy`, { method: "POST" }),
   regenerateStrategy: (id) => req(`/runs/${id}/regenerate_strategy`, { method: "POST" }),
 

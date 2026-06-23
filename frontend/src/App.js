@@ -9,6 +9,7 @@ import CommandCenter from "@/pages/CommandCenter";
 import ContentStudio from "@/pages/ContentStudio";
 import ExportPage from "@/pages/ExportPage";
 import Projects from "@/pages/Projects";
+import StrategyDirection from "@/pages/StrategyDirection";
 import CopilotPanel from "@/components/CopilotPanel";
 import { RunProvider } from "@/lib/RunContext";
 
@@ -26,6 +27,7 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/research" element={<CompanyResearch />} />
+            <Route path="/strategy-direction" element={<StrategyDirection />} />
             <Route path="/ideation" element={<StrategyIdeation />} />
             <Route path="/command-center" element={<CommandCenter />} />
             <Route path="/studio" element={<ContentStudio />} />

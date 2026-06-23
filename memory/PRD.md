@@ -1,60 +1,53 @@
 # MOVE — GTM AI Platform — PRD
 
 ## Original Problem Statement
-Build a premium enterprise SaaS web application called **MOVE** (originally Beamdata GTM AI). Full-stack web app with a sequential GTM agent workflow: Research → Strategy → Content → Export. Must integrate with the user's LangGraph-style agent system **without modifying the agent code itself**.
+Premium enterprise SaaS, MOVE. Sequential GTM agent workflow: Research → **Strategy Direction (NEW gate)** → Strategy → Content → Export. Agent at `/app/backend/agent/` is locked. All UI must be research-grounded, explainable, auditable, with no unsupported AI-generated assumptions.
 
 ## Locked Constraints
-- The GTM agent at `/app/backend/agent/` is a black box. Do NOT modify its prompts, tools, agents, schemas, or pipeline.
-- All HTTP routes are mounted under `/api`.
-- Env-driven config only (`MONGO_URL`, `DB_NAME`, `OPENAI_API_KEY`, `REACT_APP_BACKEND_URL`).
-- Citations live in the Sources drawer ONLY. They are stripped from every rendered text leaf in the UI but preserved in PDF/DOCX/PPTX exports.
+- Agent code at `/app/backend/agent/` is a black box.
+- All HTTP routes under `/api`.
+- Env-driven config only.
+- Citations live in the Sources drawer only; stripped from every UI text leaf.
+- **NEW**: Strategy generation NEVER auto-runs after research approval — the user must explicitly choose a direction or write their own GTM objective.
 
 ## Architecture
-- **Frontend** (`/app/frontend`): React + Tailwind + shadcn/ui.
-  - Routes: `/`, `/projects`, `/research`, `/ideation`, `/command-center`, `/studio`, `/export`.
-  - Global `CopilotPanel` (right rail, stage-aware: Research / Strategy / Content / GTM Assistant), collapsible to a floating button. z-index 10001 to clear platform badge.
-  - `ProgressTracker` (4 clickable stages) + `StageNav` (Previous / Return to Projects / Next) on every workflow page.
-- **Backend** (`/app/backend`):
-  - `server.py` — FastAPI gateway (`/api/*`).
-  - `web_orchestrator.py` — sequential pipeline driver + scoped exports + zip bundling.
-  - `chat.py` — OpenAI chat helper (scope: research | strategy | content).
-  - `agent/` — locked agent.
-- **Storage**: MongoDB (`gtm_runs`) + filesystem (`/app/backend/runs/{run_id}/`).
+- **Frontend** routes: `/`, `/projects`, `/research`, `/strategy-direction`, `/ideation`, `/command-center`, `/studio`, `/export`.
+- **Backend**:
+  - `server.py` — FastAPI gateway.
+  - `web_orchestrator.py` — sequential pipeline; `approve_research` now sets `awaiting_strategy_direction` (no auto-launch). `suggest_directions` calls the new `strategy_direction.py` helper. `start_strategy(direction, custom)` records the choice and launches `_run_strategy` in a background thread.
+  - `strategy_direction.py` — NEW; OpenAI call grounded strictly in the report (executive summary, SWOT, opportunities, risks, recommendations, personas, competitors). Returns exactly 4 directions: `{title, summary, target_segment, primary_motion, evidence[]}` with response_format=json_object.
+  - `chat.py` — unchanged.
+  - `agent/` — locked.
 
-## API Contract (under `/api`)
+## API Contract (under `/api`) — NEW endpoints **bold**
 - `GET /health` · `POST /runs` · `GET /runs` · `GET /runs/{id}` · `DELETE /runs/{id}`
-- HITL: `POST /runs/{id}/{approve|regenerate}_{research|strategy|content}`
-- `POST /runs/{id}/export` body `{format: "pdf"|"docx"|"pptx"|"zip", scope?: "research"|"strategy"|"combined"}`
-- `GET /runs/{id}/files/{filename}` — download
-- `POST /runs/{id}/chat` body `{scope: research|strategy|content, messages: [...]}`
+- `POST /runs/{id}/approve_research` (now → `awaiting_strategy_direction`)
+- **`GET /runs/{id}/strategy/suggestions`** → `{directions: [...]}` (cached on run doc)
+- **`POST /runs/{id}/strategy/suggestions`** → re-generate
+- **`POST /runs/{id}/strategy/start`** body `{direction: str, custom?: bool}`
+- `POST /runs/{id}/approve_strategy` · `regenerate_strategy`
+- `POST /runs/{id}/approve_content` · `regenerate_content`
+- `POST /runs/{id}/export` · `GET /runs/{id}/files/{filename}` · `POST /runs/{id}/chat`
 
-## Exports
-- PDF × 3 (research / strategy / combined), DOCX × 3, PPTX × 1 (strategy deck), ZIP × 1 (full kit organised under pdf/ docx/ pptx/).
+## New Status Flow
+research → approve_research → **`awaiting_strategy_direction`** → start_strategy → running(strategy) → `awaiting_strategy_approval` → approve_strategy → running(content) → `awaiting_content_approval` → approve_content → `complete`
+
+## Frontend
+- **`/strategy-direction`** (NEW page): renders 4 grounded direction cards (motion badge, title, summary, target segment, "Grounded in research" evidence bullets) + optional custom textarea. "Generate strategy" gated on selection.
+- **`/ideation`** (rewritten body): Strategy Summary card at top (chosen direction, North star, Positioning, Primary motion, Top priorities, Open-full and Approve buttons) + Full strategy as a shadcn **Accordion** (Positioning canvas / SWOT / Messaging pyramid / Strategic priorities). Auto-redirect to `/strategy-direction` if status is `awaiting_strategy_direction`.
+- **`/research`** `onApprove` now navigates to `/strategy-direction` (was `/ideation`).
+- All sections continue to hide when their data is empty. `stripCitations()` continues to scrub `[N]` markers.
+- `RunContext.ACTIVE_STATUSES` includes `awaiting_strategy_direction`. `RunStatusPill` label = "Choose a strategy direction".
 
 ## Design System
-Light cream theme (`#FBFAF7`), ink `#1A1D2E`, gradient `coral → mauve → indigo`. Logo lockup: bolt mark on dark capsule + gradient "MOVE" wordmark (new logoMOVE.png).
+Unchanged. Cream theme + coral→mauve→indigo gradient. New page reuses tokens (move-grad-1-tint / move-grad-2-tint / move-grad-3-tint, move-ink, move-success).
 
 ## Changelog
-### 2026-06-23 — Research page pure-visualisation redesign
-- Rewrote `/research` as a strict visualisation layer: full-width Executive Summary, 2×2 SWOT matrix, expandable Opportunity/Risk/Recommendation cards, Competitors table, individual Persona cards, Market Trends bullet list, sticky left TOC (`ResearchTOC`).
-- Added `stripCitations()` so every text leaf in the page body removes `[N]`/`[N,M]` markers; citations only live in the Sources drawer.
-- Sections auto-hide when their data array is empty.
-- Sources drawer now renders citation labels `[id]`, domain, official badge, clickable URL with data-testid='source-N'.
-- Fixed Copilot z-index overlap with `#emergent-badge`: panel and FAB raised to z-index 10001 and lifted by 80px from the bottom.
-
-### 2026-06-23 — UX overhaul (earlier)
-- Persistent stage-aware Copilot panel (Research / Strategy / Content / GTM Assistant), collapsible FAB.
-- 4-stage simplified nav (Research / Strategy / Content / Export); Projects page; clickable ProgressTracker; StageNav with Prev/Next/Return-to-Projects.
-- Executive summaries, SWOT grid, Positioning canvas, Messaging pyramid, Strategic priorities on the Strategy page.
-- Asset cards + ExpandableContentCard on the Content page.
-- Dedicated Export page extracted from ContentStudio.
-- Logo swap to logoMOVE.png across TopNav + index.html.
-
-### 2026-06-23 — Sequential pipeline migration
-- Replaced agent with the new sequential backend (research → strategy → content). New API: approve/regenerate_content. Exports gained scope filtering and zip bundling.
+### 2026-06-23 — Strategy Direction gate + grounded summary
+- Backend: `approve_research` no longer auto-launches strategy. Added `strategy_direction.py` (4 directions, JSON-validated, grounded prompt). Added 3 new endpoints. `start_strategy` stores chosen direction in run doc + injects into `result.user_strategy_direction` + `plan.user_directive`.
+- Frontend: new `/strategy-direction` page with cards + custom textarea. New Strategy Summary card on `/ideation`. Full strategy rendered as collapsible Accordion sections. Auto-redirect logic. Status labels + active statuses updated.
 
 ## Backlog
-- **P1** Re-test hidden-section behaviour on a run with empty risks/recommendations (logic verified by code review; not exercised on real data yet).
-- **P2** Persist Copilot conversation per stage across route changes (currently resets to intro on route change).
-- **P2** Mobile polish: TOC collapses below md breakpoint; ensure cards stack cleanly.
-- **P2** CommandCenter deep-dive page is still routed at `/command-center` (linked from FAQ only).
+- **P1** Persist Copilot conversation per stage across route changes.
+- **P2** Show selected direction prominently in `/export` page summary.
+- **P2** Mobile polish: direction cards stack cleanly; accordion items full-width.

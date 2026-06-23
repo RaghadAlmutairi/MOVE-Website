@@ -90,8 +90,8 @@ export default function CompanyResearch() {
     if (!run) return;
     try {
       await mutate(() => api.approveResearch(run.id));
-      toast.success("Research approved", { description: "Generating GTM strategy…" });
-      navigate("/ideation");
+      toast.success("Research approved", { description: "Pick a strategy direction next." });
+      navigate("/strategy-direction");
     } catch (e) { toast.error("Approval failed", { description: e.message }); }
   };
   const onRegenerate = async () => {

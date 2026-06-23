@@ -255,19 +255,18 @@ def create_run(query: str, url: str = "") -> str:
 # ---------------------------------------------------------------------------
 
 def approve_research(run_id: str) -> None:
-    """Approve research and auto-launch strategy."""
+    """Approve research; pause for the user to pick a strategy direction."""
     doc = _get(run_id)
     if not doc:
         raise ValueError("Run not found")
     if doc.get("status") != "awaiting_research_approval":
         raise ValueError(f"Run not awaiting research approval (status={doc.get('status')})")
     _update(run_id,
-            status="running",
-            stage="strategy",
+            status="awaiting_strategy_direction",
+            stage="strategy_direction",
             approved_research=True)
     _push_event(run_id, "research", "approved")
-    threading.Thread(target=_run_strategy, args=(run_id,), daemon=True,
-                     name=f"strategy-{run_id[:8]}").start()
+    _push_event(run_id, "strategy_direction", "awaiting_user")
 
 
 def regenerate_research(run_id: str) -> None:
@@ -282,6 +281,67 @@ def regenerate_research(run_id: str) -> None:
         daemon=True,
         name=f"regen-research-{run_id[:8]}",
     ).start()
+
+
+# ── Strategy direction gate ────────────────────────────────────────────────
+def suggest_directions(run_id: str) -> List[Dict[str, Any]]:
+    """Generate (or return cached) 4 strategy-direction suggestions.
+
+    Suggestions are LLM-derived but the prompt forbids inventing fields not in
+    the research report; the response is JSON-validated and trimmed.
+    """
+    from strategy_direction import generate_directions
+
+    doc = _get(run_id)
+    if not doc:
+        raise ValueError("Run not found")
+    if doc.get("status") not in ("awaiting_strategy_direction", "awaiting_strategy_approval", "complete"):
+        # Research must be approved before we can suggest directions.
+        if doc.get("status") != "awaiting_research_approval":
+            raise ValueError(f"Cannot suggest directions in status={doc.get('status')}")
+    cached = doc.get("strategy_directions") or []
+    if cached:
+        return cached
+    result = doc.get("result") or {}
+    if not result.get("report"):
+        raise ValueError("Research report not available")
+    suggestions = generate_directions(result)
+    _update(run_id, strategy_directions=suggestions)
+    _push_event(run_id, "strategy_direction", "suggested", count=len(suggestions))
+    return suggestions
+
+
+def start_strategy(run_id: str, direction: str, custom: bool = False,
+                   meta: Optional[Dict[str, Any]] = None) -> None:
+    """Record the user's chosen direction and launch the strategy agent."""
+    doc = _get(run_id)
+    if not doc:
+        raise ValueError("Run not found")
+    if doc.get("status") != "awaiting_strategy_direction":
+        raise ValueError(f"Run not awaiting strategy direction (status={doc.get('status')})")
+    direction = (direction or "").strip()
+    if not direction:
+        raise ValueError("Direction is required")
+    chosen = {"direction": direction, "custom": bool(custom), "meta": meta or {}}
+    _update(run_id,
+            strategy_direction=chosen,
+            status="running",
+            stage="strategy")
+    _push_event(run_id, "strategy_direction", "chosen", custom=bool(custom))
+
+    # Inject the user direction into the result so the strategy agent (and
+    # any downstream stages) see it. We add a NEW field — never overwrite the
+    # locked agent's expected fields.
+    result = dict(doc.get("result") or {})
+    result["user_strategy_direction"] = chosen
+    # Also stash inside `plan` since some prompts read from there.
+    plan = dict(result.get("plan") or {})
+    plan["user_directive"] = direction
+    result["plan"] = plan
+    _update(run_id, result=_redact(result))
+
+    threading.Thread(target=_run_strategy, args=(run_id,), daemon=True,
+                     name=f"strategy-{run_id[:8]}").start()
 
 
 def approve_strategy(run_id: str) -> None:

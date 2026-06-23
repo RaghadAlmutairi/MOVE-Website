@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   ArrowRight, ChevronRight, CheckCircle2, RefreshCw, AlertTriangle, Loader2, Sparkles, Target,
+  Compass, Eye, FlagTriangleRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
@@ -9,8 +10,9 @@ import ProgressTracker from "@/components/ProgressTracker";
 import StageNav from "@/components/StageNav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
-  ExecutiveSummary, SWOTGrid, PositioningCanvas, MessagingPyramid, StrategicPriorities,
+  SWOTGrid, PositioningCanvas, MessagingPyramid, StrategicPriorities,
 } from "@/components/visuals/Visuals";
 import { useRun } from "@/lib/RunContext";
 import { api } from "@/lib/api";
@@ -23,15 +25,25 @@ export default function StrategyIdeation() {
   const strategy = useMemo(() => (result ? getStrategyView(result) : null), [result]);
   const report = useMemo(() => (result ? getReportView(result) : null), [result]);
   const status = run?.status;
+  const [fullOpen, setFullOpen] = useState([]);   // accordion items open
+  const chosenDirection = run?.strategy_direction;
 
   const awaitingStrategy = status === "awaiting_strategy_approval";
   const strategyRunning = status === "running" && (run?.stage === "strategy" || run?.stage === "parallel");
+
+  // Redirect to the direction gate when the user lands on /ideation but the
+  // run is still awaiting the user to choose a direction.
+  useEffect(() => {
+    if (status === "awaiting_strategy_direction") navigate("/strategy-direction", { replace: true });
+  }, [status, navigate]);
 
   if (!run) return <Shell><EmptyState title="No active run" desc="Run research first." cta="Start Research" onClick={() => navigate("/research")} /></Shell>;
   if (status === "running" && run.stage === "research")
     return <Shell><EmptyState title="Research still running" desc="Approve research to launch the strategy agent." cta="View Research" onClick={() => navigate("/research")} /></Shell>;
   if (status === "awaiting_research_approval")
     return <Shell><EmptyState title="Approve research first" desc="The strategy agent only runs after you approve the research." cta="Review research" onClick={() => navigate("/research")} /></Shell>;
+  if (status === "awaiting_strategy_direction")
+    return <Shell><EmptyState title="Pick a strategy direction" desc="Choose an AI-suggested direction or describe your own GTM objective to launch the strategy agent." cta="Choose direction" onClick={() => navigate("/strategy-direction")} /></Shell>;
 
   const edge0 = strategy && (strategy.foundation.competitiveEdges || [])[0];
   const edgeText = (e) => typeof e === "string" ? e : (e?.against || e?.competitor || e?.label || e?.sharpest_message || e?.edge || "");
@@ -93,49 +105,67 @@ export default function StrategyIdeation() {
 
       {strategy && (
         <>
-          {/* Executive summary at top — 30-second read */}
-          <ExecutiveSummary
-            kind="strategy"
-            insights={strategy.northStar ? [strategy.northStar] : []}
-            opportunities={(strategy.foundation.topPains || []).slice(0, 4).map((p) => `Address: ${p}`)}
-            risks={strategy.execution.risks || []}
-            recommendations={priorities.slice(0, 4).map((p) => p.label)}
+          {/* ── Strategy Summary card ─────────────────────────────────
+              Concise summary with Approve / Open Full actions. Approve
+              from here without ever expanding the sections. */}
+          <StrategySummaryCard
+            northStar={strategy.northStar}
+            positioningLine={positioning?.statement || strategy.foundation.positioning}
+            targetSegment={strategy.foundation.icp?.title || strategy.foundation.icp?.segment}
+            primaryMotion={strategy.activation?.motion?.primary || strategy.activation?.primary_motion}
+            priorityTitles={priorities.slice(0, 4).map((p) => p.label)}
+            chosenDirection={chosenDirection}
+            awaitingStrategy={awaitingStrategy}
+            onApprove={async () => { try { await mutate(() => api.approveStrategy(run.id)); toast.success("Strategy approved", { description: "Generating content suite…" }); navigate("/studio"); } catch (e) { toast.error(e.message); } }}
+            onRegenerate={async () => { try { await mutate(() => api.regenerateStrategy(run.id)); toast.success("Regenerating strategy…"); } catch (e) { toast.error(e.message); } }}
+            onOpenFull={() => {
+              setFullOpen(["positioning", "swot", "messaging", "priorities"]);
+              setTimeout(() => document.getElementById("strategy-full")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+            }}
           />
 
-          {/* North star */}
-          <section className="mb-8 rounded-[16px] border border-move-border bg-move-surface p-6">
-            <div className="text-xs uppercase tracking-wider text-move-grad-2 font-medium mb-2" style={{ fontWeight: 500 }}>North star</div>
-            <p className="text-2xl font-medium text-move-ink leading-snug" style={{ fontWeight: 500 }}>{strategy.northStar || "—"}</p>
+          {/* ── Full strategy ─ collapsible accordion ──────────────── */}
+          <section id="strategy-full" className="mt-10" data-testid="strategy-full">
+            <div className="flex items-center gap-2 mb-4">
+              <FlagTriangleRight className="w-5 h-5 text-move-ink" />
+              <h2 className="text-xl font-medium text-move-ink" style={{ fontWeight: 500 }}>Full strategy</h2>
+              <div className="ml-3 h-px flex-1 bg-move-border" />
+              <button
+                onClick={() => setFullOpen(fullOpen.length === 4 ? [] : ["positioning", "swot", "messaging", "priorities"])}
+                data-testid="strategy-toggle-all"
+                className="text-xs text-move-muted hover:text-move-ink"
+              >
+                {fullOpen.length === 4 ? "Collapse all" : "Expand all"}
+              </button>
+            </div>
+
+            <Accordion type="multiple" value={fullOpen} onValueChange={setFullOpen} className="space-y-3">
+              <AccordionSection id="positioning" title="Positioning canvas" icon={Target}>
+                <PositioningCanvas positioning={positioning} />
+              </AccordionSection>
+
+              {(report?.swot && (report.swot.strengths.length || report.swot.weaknesses.length)) > 0 && (
+                <AccordionSection id="swot" title="SWOT" icon={AlertTriangle}>
+                  <SWOTGrid swot={{
+                    strengths:     report.swot.strengths.map((s) => s.point || s),
+                    weaknesses:    report.swot.weaknesses.map((s) => s.point || s),
+                    opportunities: report.swot.opportunities.map((s) => s.point || s),
+                    threats:       report.swot.threats.map((s) => s.point || s),
+                  }} />
+                </AccordionSection>
+              )}
+
+              <AccordionSection id="messaging" title="Messaging pyramid" icon={Sparkles}>
+                <MessagingPyramid messaging={messaging} />
+              </AccordionSection>
+
+              {priorities.length > 0 && (
+                <AccordionSection id="priorities" title="Strategic priorities (90-day plan)" icon={CheckCircle2}>
+                  <StrategicPriorities priorities={priorities} />
+                </AccordionSection>
+              )}
+            </Accordion>
           </section>
-
-          {/* Positioning canvas */}
-          <Section icon={Target} title="Positioning canvas">
-            <PositioningCanvas positioning={positioning} />
-          </Section>
-
-          {/* SWOT */}
-          {(report?.swot && (report.swot.strengths.length || report.swot.weaknesses.length)) > 0 && (
-            <Section icon={AlertTriangle} title="SWOT">
-              <SWOTGrid swot={{
-                strengths:     report.swot.strengths.map((s) => s.point || s),
-                weaknesses:    report.swot.weaknesses.map((s) => s.point || s),
-                opportunities: report.swot.opportunities.map((s) => s.point || s),
-                threats:       report.swot.threats.map((s) => s.point || s),
-              }} />
-            </Section>
-          )}
-
-          {/* Messaging pyramid */}
-          <Section icon={Sparkles} title="Messaging pyramid">
-            <MessagingPyramid messaging={messaging} />
-          </Section>
-
-          {/* Strategic priorities */}
-          {priorities.length > 0 && (
-            <Section icon={CheckCircle2} title="Strategic priorities (90-day plan)">
-              <StrategicPriorities priorities={priorities} />
-            </Section>
-          )}
 
           {(status === "awaiting_content_approval" || status === "complete") && (
             <div className="mt-8 rounded-[16px] border border-move-grad-3/40 bg-move-grad-3-tint p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -164,16 +194,107 @@ export default function StrategyIdeation() {
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-function Section({ icon: Icon, title, children }) {
+function StrategySummaryCard({ northStar, positioningLine, targetSegment, primaryMotion,
+                               priorityTitles, chosenDirection, awaitingStrategy,
+                               onApprove, onRegenerate, onOpenFull }) {
   return (
-    <section className="mb-8">
-      <div className="flex items-center gap-2 mb-4">
-        <Icon className="w-5 h-5 text-move-ink" />
-        <h2 className="text-xl font-medium text-move-ink" style={{ fontWeight: 500 }}>{title}</h2>
-        <div className="ml-3 h-px flex-1 bg-move-border" />
+    <section className="mb-10 rounded-[20px] border border-move-grad-3/40 bg-gradient-to-br from-move-grad-1-tint via-move-surface to-move-grad-3-tint p-7 md:p-9"
+             data-testid="strategy-summary">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-move-grad-2/40 bg-move-grad-2-tint text-move-grad-2">
+          <Eye className="w-3 h-3" /> Strategy summary
+        </span>
+        <span className="text-xs text-move-muted">Read in 30 seconds. Approve here or expand the full plan below.</span>
       </div>
-      {children}
+
+      {chosenDirection?.direction && (
+        <div className="mb-5 rounded-[12px] border border-move-border bg-move-surface/80 p-4">
+          <div className="text-[11px] uppercase tracking-wider text-move-grad-3 font-medium mb-1" style={{ fontWeight: 500 }}>
+            {chosenDirection.custom ? "Your GTM objective" : "Chosen direction"}
+          </div>
+          <p className="text-sm text-move-ink leading-relaxed whitespace-pre-wrap line-clamp-3">{chosenDirection.direction}</p>
+        </div>
+      )}
+
+      {northStar && (
+        <div className="mb-5">
+          <div className="text-[11px] uppercase tracking-wider text-move-grad-2 font-medium mb-1.5" style={{ fontWeight: 500 }}>North star</div>
+          <p className="text-2xl md:text-3xl font-medium text-move-ink leading-snug" style={{ fontWeight: 500 }} data-testid="summary-north-star">{northStar}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {positioningLine && (
+          <SummaryTile label="Positioning" icon={Target}>{positioningLine}</SummaryTile>
+        )}
+        {targetSegment && (
+          <SummaryTile label="Target segment" icon={Compass}>{targetSegment}</SummaryTile>
+        )}
+        {primaryMotion && (
+          <SummaryTile label="Primary motion" icon={Sparkles}>{String(primaryMotion).replace(/_/g, " ")}</SummaryTile>
+        )}
+      </div>
+
+      {priorityTitles.length > 0 && (
+        <div className="mb-6">
+          <div className="text-[11px] uppercase tracking-wider text-move-muted font-medium mb-2" style={{ fontWeight: 500 }}>Top priorities</div>
+          <ol className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {priorityTitles.map((t, i) => (
+              <li key={i} className="flex gap-2 text-sm text-move-ink leading-snug">
+                <span className="shrink-0 w-5 h-5 rounded-md bg-move-ink text-white flex items-center justify-center text-[10px] font-medium mt-0.5" style={{ fontWeight: 500 }}>{i + 1}</span>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-move-border">
+        <Button variant="ghost" onClick={onOpenFull} data-testid="summary-open-full"
+                className="text-move-ink hover:bg-move-bg-subtle h-11 rounded-[10px] font-medium">
+          Open full strategy <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+        {awaitingStrategy && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onRegenerate} data-testid="summary-regenerate"
+                    className="border-move-border-ghost text-move-ink hover:bg-move-bg-subtle h-11 rounded-[10px]">
+              <RefreshCw className="w-4 h-4 mr-1.5" /> Regenerate
+            </Button>
+            <Button onClick={onApprove} data-testid="summary-approve"
+                    className="bg-move-success hover:opacity-90 text-white h-11 rounded-[10px] font-medium shadow-lg">
+              <CheckCircle2 className="w-5 h-5 mr-2" /> Approve immediately
+            </Button>
+          </div>
+        )}
+      </div>
     </section>
+  );
+}
+
+function SummaryTile({ label, icon: Icon, children }) {
+  return (
+    <div className="rounded-[12px] border border-move-border bg-move-surface p-4">
+      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-move-muted mb-1">
+        <Icon className="w-3 h-3" /> {label}
+      </div>
+      <div className="text-sm text-move-ink leading-relaxed line-clamp-3">{children}</div>
+    </div>
+  );
+}
+
+function AccordionSection({ id, title, icon: Icon, children }) {
+  return (
+    <AccordionItem value={id} className="rounded-[16px] border border-move-border bg-move-surface overflow-hidden" data-testid={`accordion-${id}`}>
+      <AccordionTrigger className="px-5 py-4 hover:no-underline group">
+        <div className="flex items-center gap-3 flex-1">
+          <Icon className="w-4 h-4 text-move-ink shrink-0" />
+          <span className="text-base font-medium text-move-ink text-left" style={{ fontWeight: 500 }}>{title}</span>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="px-5 pb-5">
+        {children}
+      </AccordionContent>
+    </AccordionItem>
   );
 }
 
