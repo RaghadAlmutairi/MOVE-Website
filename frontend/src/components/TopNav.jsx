@@ -17,6 +17,7 @@ const NAV = [
   { to: "/research", label: "Research" },
   { to: "/ideation", label: "Strategy" },
   { to: "/studio", label: "Content" },
+  { to: "/export", label: "Export" },
 ];
 
 export default function TopNav({ variant = "app" }) {
@@ -39,7 +40,7 @@ export default function TopNav({ variant = "app" }) {
             style={{ width: 40, height: 40 }}
           >
             <img
-              src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/den8bpor_new%20move%20logo.png"
+              src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/g91qhsgm_logoMOVE.png"
               alt=""
               aria-hidden="true"
               className="object-cover"
@@ -200,6 +201,9 @@ export default function TopNav({ variant = "app" }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-ink-surface border-ink-border text-ink-text" align="end">
                 <DropdownMenuLabel>Alex Kim</DropdownMenuLabel>
+                <DropdownMenuItem asChild className="focus:bg-ink-elevated">
+                  <Link to="/projects" data-testid="user-menu-projects">Projects</Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem className="focus:bg-ink-elevated">Profile</DropdownMenuItem>
                 <DropdownMenuItem className="focus:bg-ink-elevated">Settings</DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-ink-border" />

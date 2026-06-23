@@ -1,0 +1,87 @@
+{
+  "summary": "Iteration 3 - UX overhaul (persistent CopilotPanel, ProgressTracker, StageNav, new Projects + Export pages, refactored visuals). Backend pytest still 25/25 PASS (chat scope='content' verified). Frontend: 90% of testids verified across landing, /research, /studio, /export, /projects. TWO frontend issues found - one CRITICAL: /ideation crashes with an Uncaught React error 'Objects are not valid as a React child (found: object with keys {competitor, where_we_win, where_they_win, dont_compete_on, sharpest_message})' which whites out the whole Strategy page. Root cause: StrategyIdeation.jsx line 42 falls back to the whole competitiveEdges[0] object when .against is missing. Second: Copilot chat send on /research did not produce a user/assistant bubble (only intro shown) - the message text remained in the input box after click; needs investigation (possibly RunContext not loaded yet when click fired, or send button click guarded by run not yet hydrated). Also content-group-seo is missing on /studio because the seeded run has no content.seo items - groups only render when items.length>0; spec implies all 4 channels should be visible.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/runs/{id}/export", "issue": "Bad format/scope returns 422 (Pydantic Literal) instead of strict 400. Acceptable."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "StrategyIdeation.jsx (PositioningCanvas via positioning.unlike)",
+        "issue": "CRITICAL: Navigating to /ideation with the seeded complete run crashes with 'Objects are not valid as a React child (found: object with keys {competitor, where_we_win, where_they_win, dont_compete_on, sharpest_message})'. The full Strategy page is replaced by the CRA red error overlay; copilot-title, exec-summary-strategy, positioning-canvas, swot-grid, messaging-pyramid and strategic-priorities never mount. Root cause: /app/frontend/src/pages/StrategyIdeation.jsx line 42 -> `unlike: (strategy.foundation.competitiveEdges || [])[0]?.against || (strategy.foundation.competitiveEdges || [])[0]` - when competitiveEdges[0] is an object that lacks `.against`, the fallback yields the WHOLE object. PositioningCanvas then renders `{b.value}` on Visuals.jsx line 275 which throws. Fix: coerce to string, e.g. `unlike: edge?.against || edge?.competitor || edge?.label || (typeof edge === 'string' ? edge : '')`. Same hardening should be applied to any other field that maps from competitiveEdges (line 52 already does typeof-string handling; line 42 does not).",
+        "selector": "[data-testid='exec-summary-strategy']",
+        "priority": "CRITICAL"
+      },
+      {
+        "component": "CopilotPanel.jsx (send flow on /research)",
+        "issue": "After filling copilot-input-research and clicking copilot-send-research, no user bubble or assistant bubble appears - only the intro message remains and the input text stays unflushed. Repro: localStorage set move:active_run_id=7da57a83..., open /research, wait 4s, type into copilot-input-research, click copilot-send-research; expected 2+ messages, observed 1 (intro). Likely cause: RunContext run/runId not yet hydrated when click fires, so the `!runId` branch should have at least appended a placeholder - but messages count stayed at 1, suggesting the click handler may not be running (input change wasn't committed before click, or send button was technically disabled). Worth instrumenting - this is the SOLE primary interaction of the new persistent panel.",
+        "selector": "[data-testid='copilot-send-research']",
+        "priority": "HIGH"
+      },
+      {
+        "component": "ContentStudio.jsx (content-group-seo)",
+        "issue": "content-group-seo did NOT render on /studio for the seeded complete run because content.seo is empty (group only mounts when items.length>0, line 156). linkedin/blog/email render fine. Either seed the existing run with seo articles, or render an empty-state for missing channels so the testid is always present.",
+        "selector": "[data-testid='content-group-seo']",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Strategy stage (/ideation) end-to-end",
+        "issue": "Cannot exercise Previous/Next/Return-to-Projects/Progress click-through on /ideation because the page itself crashes on mount. Blocks any visual verification of SWOT, Positioning, Messaging, Priorities, exec-summary-strategy, and StageNav on that route.",
+        "affected_selectors": ["[data-testid='copilot-title']", "[data-testid='exec-summary-strategy']", "[data-testid='positioning-canvas']", "[data-testid='swot-grid']", "[data-testid='messaging-pyramid']", "[data-testid='strategic-priorities']", "[data-testid='stage-nav']"]
+      },
+      {
+        "flow": "Copilot chat (any scope)",
+        "issue": "Send did not append messages on /research with the seeded complete run. Backend /api/runs/{id}/chat for scopes research/strategy/content is verified working in pytest, so this is purely a frontend wiring/timing issue."
+      }
+    ],
+    "design_issues": []
+  },
+  "verified_passing": [
+    "Landing renders, MOVE logo visible (nav-logo)",
+    "Hero CTA 'Start building GTM strategy' navigates to /research",
+    "TopNav nav-research, nav-strategy, nav-content, nav-export all visible",
+    "user-menu -> user-menu-projects navigates to /projects",
+    "Persistent CopilotPanel visible by default on lg+ for /research, /studio, /export, /projects",
+    "copilot-title strings: 'Research Assistant' on /research, 'Content Assistant' on /studio, 'GTM Assistant' on /export and /projects (cannot verify /ideation due to crash)",
+    "copilot-collapse hides panel and shows copilot-fab; collapsed state persists in localStorage (move:copilot:collapsed='1') across reload",
+    "copilot-quick-research (3 buttons) present",
+    "ProgressTracker shows 4 clickable stages: progress-stage-research/-strategy/-content/-export",
+    "StageNav on /research: stage-nav-prev DISABLED, stage-nav-projects + stage-nav-next visible. stage-nav also visible on /studio and /export.",
+    "Research page: industry-snapshot, exec-summary-research, tab-landscape, tab-competitors (renders competitor-matrix), tab-personas (renders icp-cards)",
+    "Studio page: asset-cards present, content-group-linkedin, -blog, -email present",
+    "Export page: 'Download your GTM kit' hero, export-zip + 3 PDF + 3 DOCX + PPTX cards all present",
+    "Projects page: 7 project-card-{id} entries listed; clicking a card navigates to the run's correct stage (/export for the seeded complete run)",
+    "Backend pytest 25/25 PASS including TestChat[content]"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "FIX (CRITICAL): /app/frontend/src/pages/StrategyIdeation.jsx line 42 - coerce `unlike` to a string. Suggested: `const edge0 = (strategy.foundation.competitiveEdges || [])[0]; unlike: typeof edge0 === 'string' ? edge0 : (edge0?.against || edge0?.competitor || edge0?.label || edge0?.sharpest_message || '')`. As a defensive hardening, also wrap PositioningCanvas `{b.value}` with `String(b.value ?? '')` so a future malformed payload cannot whitescreen the page.",
+    "FIX (HIGH): CopilotPanel send flow on /research. Verify that the send click actually executes when run state hasn't fully hydrated yet, or disable the send button until `ready` so the user gets a clear visual cue; also confirm RunContext finishes the GET /api/runs/{id} before enabling the panel.",
+    "FIX (MEDIUM): Always render a content-group-{linkedin,blog,seo,email} testid (with an empty state) so the testid contract is stable and the SEO group is not silently absent.",
+    "Optional: convert export-validation errors from 422 to 400 for strict spec compliance."
+  ],
+  "critical_code_review_comments": [
+    "Defensive rendering: any visual that maps free-form LLM JSON (PositioningCanvas, MessagingPyramid, CompetitorMatrix, StrategicPriorities) should coerce leaf values via String(v ?? '') before placing them in JSX, since LLM payloads vary across runs.",
+    "ContentStudio uses .filter(g => g.items.length > 0) which hides empty channels - this conflicts with the new spec that says all 4 channel groups should be visible. Render the group with an empty-state row to keep testids stable.",
+    "CopilotPanel useEffect on stage change always RESETS messages - a user who is mid-conversation will lose history if they tab over to /studio and back. Consider keying conversation by stage and persisting in localStorage if 'never disappears' is a UX promise.",
+    "ProgressTracker computes completedStages from a prop that's not passed by any page in the codebase I inspected - the visual will likely never show check-marks. Worth wiring this to run.stage / run.status."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (25/25 pytest)",
+    "frontend": "~75% - landing/research/studio/export/projects all pass testid checks; /ideation completely broken; Copilot chat send is non-functional from the UI"
+  },
+  "test_credentials": "N/A - app has no user auth",
+  "seed_data_creation": "Reused existing complete run 7da57a83-626e-47b2-9289-044d2e4fbd6c. Set localStorage.move:active_run_id to seed the active run for frontend tests.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend is solid (25/25). After main agent fixes the unlike-object crash in StrategyIdeation.jsx, retest the full /ideation page (exec-summary-strategy, positioning-canvas, swot-grid, messaging-pyramid, strategic-priorities, stage-nav). Also retest copilot chat send on any stage. Re-verify content-group-seo is visible (or that an empty-state is rendered). Tests: pytest /app/backend/tests/backend_test.py covers backend in <10s using the seeded run.",
+  "rca of the issue": "PRIMARY: StrategyIdeation.jsx maps the strategy result onto a `positioning` view-model. Line 42 sets `unlike: competitiveEdges[0]?.against || competitiveEdges[0]`. For the seeded run, competitiveEdges[0] is an object {competitor, where_we_win, where_they_win, dont_compete_on, sharpest_message} that has NO `.against` field, so the OR fallback returns the whole object. PositioningCanvas then renders `{b.value}` directly (Visuals.jsx:275), and React throws 'Objects are not valid as a React child' which unmounts the entire route. Reproduction: open /ideation with localStorage move:active_run_id=7da57a83-626e-47b2-9289-044d2e4fbd6c. Mitigation: see fix in action_items."
+}
