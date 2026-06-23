@@ -185,8 +185,49 @@ html, body {
         border: 1px solid rgba(26, 29, 46, 0.9);
     }
     
-    /* No glows in MOVE design - removed */
-    
+    /* ── Aurora gradient shadow ──────────────────────────────────────────
+       A premium, full-bleed gradient backdrop that lives BEHIND the content
+       and gives the page a soft, atmospheric glow. Uses brand grad-1/2/3
+       tints so it adapts cleanly to light and dark themes. */
+    .gradient-shadow-bg {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+            radial-gradient(60% 40% at 12% 8%,   rgba(212, 149, 107, 0.32) 0%, transparent 60%),
+            radial-gradient(55% 45% at 92% 18%,  rgba(185, 122, 138, 0.28) 0%, transparent 65%),
+            radial-gradient(70% 55% at 50% 100%, rgba(107, 123, 168, 0.26) 0%, transparent 70%),
+            radial-gradient(40% 30% at 85% 85%,  rgba(212, 149, 107, 0.22) 0%, transparent 65%);
+        filter: blur(70px) saturate(120%);
+    }
+    .dark .gradient-shadow-bg {
+        background:
+            radial-gradient(60% 40% at 12% 8%,   rgba(231, 167, 122, 0.22) 0%, transparent 60%),
+            radial-gradient(55% 45% at 92% 18%,  rgba(208, 149, 166, 0.22) 0%, transparent 65%),
+            radial-gradient(70% 55% at 50% 100%, rgba(143, 157, 214, 0.26) 0%, transparent 70%),
+            radial-gradient(40% 30% at 85% 85%,  rgba(231, 167, 122, 0.18) 0%, transparent 65%);
+        filter: blur(90px) saturate(140%) brightness(1.1);
+    }
+
+    /* Animated drift so the glow feels alive without being distracting. */
+    .gradient-shadow-bg::after {
+        content: "";
+        position: absolute;
+        inset: -20%;
+        background: inherit;
+        opacity: 0.55;
+        animation: gradientDrift 22s ease-in-out infinite alternate;
+    }
+    @keyframes gradientDrift {
+        0%   { transform: translate3d(0, 0, 0) scale(1); }
+        50%  { transform: translate3d(-2%, 1.5%, 0) scale(1.05); }
+        100% { transform: translate3d(2%, -1%, 0) scale(1.02); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .gradient-shadow-bg::after { animation: none; }
+    }
+
     /* Grid background updated for warm palette */
     .grid-bg {
         background-image:

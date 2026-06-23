@@ -74,6 +74,9 @@ const easing = [0.16, 1, 0.3, 1];
 export default function Landing() {
   return (
     <div className="relative bg-move-bg min-h-screen overflow-hidden">
+      {/* Aurora gradient shadow — full-bleed atmospheric backdrop */}
+      <div aria-hidden className="gradient-shadow-bg" data-testid="landing-gradient-shadow" />
+
       {/* Subtle grain layer for depth (CSS noise via SVG data URI) */}
       <div
         aria-hidden
