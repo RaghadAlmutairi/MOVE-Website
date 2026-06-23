@@ -80,6 +80,9 @@ export default function CompanyResearch() {
     try {
       await startRun(query.trim(), url.trim());
       toast.success("Research started", { description: "This typically takes 60–120 seconds." });
+      setQuery(""); setUrl("");
+      // Scroll to top so the user sees the running banner appear.
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) { toast.error("Could not start", { description: e.message }); }
     finally { setSubmitting(false); }
   };
@@ -141,32 +144,55 @@ export default function CompanyResearch() {
           </div>
         </header>
 
-        {/* ── New-run form (always available so user can start another) ─ */}
-        {(!view || isAwaiting) && (
-          <div className="rounded-[16px] border border-move-border bg-move-surface p-6 mb-10" data-testid="research-form">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-              <div className="md:col-span-7">
-                <label className="text-sm font-medium text-move-ink mb-2 block" style={{ fontWeight: 500 }}>Company name</label>
-                <div className="relative">
-                  <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-move-muted" />
-                  <Input data-testid="research-query" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. Stripe, OpenAI, your own brand…" className="pl-10 h-12 text-base bg-move-bg border-move-border-ghost text-move-ink" />
-                </div>
-              </div>
-              <div className="md:col-span-3">
-                <label className="text-sm font-medium text-move-ink mb-2 block" style={{ fontWeight: 500 }}>Company URL <span className="text-move-muted font-normal">(optional)</span></label>
-                <div className="relative">
-                  <Globe className="absolute left-3 top-3 w-4 h-4 text-move-muted" />
-                  <Input data-testid="research-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" className="pl-10 h-12 text-base bg-move-bg border-move-border-ghost text-move-ink" />
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <Button onClick={onAnalyze} disabled={submitting || isResearchRunning} data-testid="research-analyze-btn" className="w-full h-12 text-base bg-move-ink hover:bg-move-ink-hover text-white rounded-[12px] font-medium" style={{ fontWeight: 500 }}>
-                  {submitting || isResearchRunning ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-1.5" />Research</>}
-                </Button>
+        {/* ── New-run form — ALWAYS visible so the user can launch a research
+              at any time. When a run already exists below, this acts as the
+              entry point for a NEW project. */}
+        <div className="rounded-[16px] border border-move-border bg-move-surface p-6 mb-10" data-testid="research-form">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 mb-4">
+            <div>
+              <h2 className="text-lg font-medium text-move-ink" style={{ fontWeight: 500 }}>
+                {view ? "Start a new research" : "Start your research"}
+              </h2>
+              <p className="text-sm text-move-body mt-0.5">
+                {view ? "Submitting will launch a fresh agent run and replace the current report below." : "Enter a company name to launch the multi-agent research pipeline."}
+              </p>
+            </div>
+            {isResearchRunning && (
+              <span className="flex items-center gap-2 text-sm text-move-grad-2" data-testid="research-running-indicator">
+                <Loader2 className="w-4 h-4 animate-spin" /> Agent running…
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            <div className="md:col-span-7">
+              <label htmlFor="research-query" className="text-sm font-medium text-move-ink mb-2 block" style={{ fontWeight: 500 }}>Company name</label>
+              <div className="relative">
+                <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-move-muted" />
+                <Input id="research-query" data-testid="research-query" value={query}
+                       onChange={(e) => setQuery(e.target.value)}
+                       onKeyDown={(e) => e.key === "Enter" && !submitting && onAnalyze()}
+                       placeholder="e.g. Stripe, OpenAI, your own brand…"
+                       className="pl-10 h-12 text-base bg-move-bg border-move-border-ghost text-move-ink" />
               </div>
             </div>
+            <div className="md:col-span-3">
+              <label htmlFor="research-url" className="text-sm font-medium text-move-ink mb-2 block" style={{ fontWeight: 500 }}>Company URL <span className="text-move-muted font-normal">(optional)</span></label>
+              <div className="relative">
+                <Globe className="absolute left-3 top-3 w-4 h-4 text-move-muted" />
+                <Input id="research-url" data-testid="research-url" value={url}
+                       onChange={(e) => setUrl(e.target.value)}
+                       onKeyDown={(e) => e.key === "Enter" && !submitting && onAnalyze()}
+                       placeholder="https://…"
+                       className="pl-10 h-12 text-base bg-move-bg border-move-border-ghost text-move-ink" />
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <Button onClick={onAnalyze} disabled={submitting || isResearchRunning} data-testid="research-analyze-btn" className="w-full h-12 text-base bg-move-ink hover:bg-move-ink-hover text-white rounded-[12px] font-medium" style={{ fontWeight: 500 }}>
+                {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-1.5" />Research</>}
+              </Button>
+            </div>
           </div>
-        )}
+        </div>
 
         {/* States */}
         {isResearchRunning && <StageBanner kind="running" title="Research agent is working…" desc="Routing tools, gathering evidence, synthesising the report." />}
@@ -287,7 +313,7 @@ function EmptyHero() {
     <div className="rounded-[16px] border border-dashed border-move-border bg-move-bg-subtle p-12 text-center" data-testid="research-empty">
       <Sparkles className="w-10 h-10 mx-auto mb-3 text-move-grad-2" />
       <div className="text-xl font-medium text-move-ink" style={{ fontWeight: 500 }}>Ready when you are</div>
-      <p className="text-move-body mt-2 max-w-md mx-auto">Type a company name above to launch the research pipeline. Approve the report when it's ready and we'll generate the GTM strategy and content suite next.</p>
+      <p className="text-move-body mt-2 max-w-md mx-auto">Type a company name above to launch the research pipeline. Approve the report when it&apos;s ready and we&apos;ll generate the GTM strategy and content suite next.</p>
     </div>
   );
 }
