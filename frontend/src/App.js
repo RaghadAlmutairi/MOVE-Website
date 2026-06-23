@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -14,11 +13,8 @@ import CopilotPanel from "@/components/CopilotPanel";
 import { RunProvider } from "@/lib/RunContext";
 
 function App() {
-  useEffect(() => {
-    // Light theme — keep .dark off so MOVE's cream tokens render as designed.
-    document.documentElement.classList.remove("dark");
-  }, []);
-
+  // Theme is owned by useTheme() (lib/useTheme.js) which honors
+  // localStorage + prefers-color-scheme. Do NOT force a class here.
   return (
     <div className="App bg-move-bg text-move-ink min-h-screen font-sans antialiased">
       <BrowserRouter>
@@ -36,7 +32,7 @@ function App() {
           <CopilotPanel />
         </RunProvider>
       </BrowserRouter>
-      <Toaster theme="light" position="bottom-right" richColors />
+      <Toaster position="bottom-right" richColors />
     </div>
   );
 }

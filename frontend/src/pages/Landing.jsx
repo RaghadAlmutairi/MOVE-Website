@@ -137,27 +137,73 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Hero side artwork — animated logo monolith */}
+            {/* Hero side artwork — premium project card (matches the live UI) */}
             <motion.div
               initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.25, ease: easing }}
               className="lg:col-span-4 relative hidden lg:block"
             >
-              <div className="relative aspect-[4/5] rounded-[28px] border border-move-border bg-move-surface/70 backdrop-blur-sm overflow-hidden shadow-xl">
-                <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(165deg, var(--color-grad-1-tint), transparent 50%, var(--color-grad-3-tint))" }} />
-                <div className="relative h-full flex flex-col justify-between p-8">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] uppercase tracking-[0.2em] text-move-muted" style={{ fontWeight: 500 }}>Live agent</span>
-                    <span className="flex items-center gap-1.5 text-[11px] text-move-success"><span className="w-1.5 h-1.5 rounded-full bg-move-success animate-pulse" /> online</span>
+              <div className="relative rounded-[24px] border border-move-border bg-move-surface shadow-[0_24px_60px_-30px_rgba(0,0,0,0.25)] overflow-hidden">
+                {/* card header */}
+                <div className="px-6 pt-6 pb-4 border-b border-move-border flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-move-grad-1 via-move-grad-2 to-move-grad-3 flex items-center justify-center text-white text-[11px]" style={{ fontWeight: 500 }}>A</span>
+                    <div>
+                      <div className="text-[13px] text-move-ink" style={{ fontWeight: 500 }}>Anthropic — competitive brief</div>
+                      <div className="text-[11px] text-move-muted">In progress · live agent</div>
+                    </div>
                   </div>
-                  <motion.img
-                    src={LOGO} alt="" aria-hidden="true"
-                    initial={{ scale: 0.92, rotate: -3 }} animate={{ scale: 1, rotate: 0 }} transition={{ duration: 1.2, ease: easing, delay: 0.4 }}
-                    className="w-44 self-center"
-                  />
-                  <div className="text-[11px] text-move-muted leading-relaxed">
-                    Research → Strategy → Content → Export.<br />
-                    Every artefact cited. Every gate approved by a human.
-                  </div>
+                  <span className="text-[11px] text-move-grad-2 inline-flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-move-grad-2 animate-pulse" /> running
+                  </span>
+                </div>
+
+                {/* timeline rows */}
+                <ul className="px-6 py-5 space-y-3">
+                  {[
+                    { t: "Research", s: "approved", desc: "8 sources cited · SWOT · ICP" },
+                    { t: "Direction", s: "approved", desc: "Direction: Enhance enterprise governance" },
+                    { t: "Strategy", s: "running",  desc: "Composing positioning + 90-day plan…" },
+                    { t: "Content",  s: "queued",   desc: "LinkedIn · blog · SEO · email" },
+                    { t: "Export",   s: "queued",   desc: "PDF · DOCX · PPTX · ZIP" },
+                  ].map((row, i) => (
+                    <li key={i} className="flex items-center gap-3">
+                      <span className={`w-7 h-7 rounded-md border flex items-center justify-center shrink-0 ${
+                        row.s === "approved"
+                          ? "border-move-success/40 bg-move-success-bg text-move-success"
+                          : row.s === "running"
+                          ? "border-move-grad-2/40 bg-move-grad-2-tint text-move-grad-2"
+                          : "border-move-border bg-move-bg-subtle text-move-muted"
+                      }`}>
+                        <span className="text-[10px]" style={{ fontWeight: 500 }}>{i + 1}</span>
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-[13px] text-move-ink" style={{ fontWeight: 500 }}>{row.t}</div>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                            row.s === "approved" ? "border-move-success/40 bg-move-success-bg text-move-success" :
+                            row.s === "running"  ? "border-move-grad-2/40 bg-move-grad-2-tint text-move-grad-2" :
+                            "border-move-border bg-move-bg-subtle text-move-muted"
+                          }`}>{row.s}</span>
+                        </div>
+                        <div className="text-[11px] text-move-muted truncate">{row.desc}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* footer */}
+                <div className="px-6 py-4 border-t border-move-border bg-move-bg-subtle/50 flex items-center justify-between">
+                  <div className="text-[11px] text-move-muted">Awaiting your approval at <span className="text-move-ink">Strategy</span></div>
+                  <span className="text-[11px] text-move-grad-3 inline-flex items-center gap-1">View <ArrowRight className="w-3 h-3" /></span>
+                </div>
+              </div>
+
+              {/* floating chip below the card */}
+              <div className="absolute -bottom-5 -left-5 px-3 py-2 rounded-xl border border-move-border bg-move-surface shadow-lg flex items-center gap-2">
+                <img src={LOGO} alt="" aria-hidden className="w-6 h-6" />
+                <div className="text-[11px]">
+                  <div className="text-move-ink" style={{ fontWeight: 500 }}>Run #042</div>
+                  <div className="text-move-muted">Created 2 min ago</div>
                 </div>
               </div>
             </motion.div>

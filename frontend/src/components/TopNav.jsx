@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Bell, ChevronDown, Command, Sparkles } from "lucide-react";
+import { Search, Bell, ChevronDown, Command, Sparkles, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import RunStatusPill from "@/components/RunStatusPill";
+import { useTheme } from "@/lib/useTheme";
 
 const NAV = [
   { to: "/research", label: "Research" },
@@ -23,6 +24,7 @@ const NAV = [
 export default function TopNav({ variant = "app" }) {
   const location = useLocation();
   const [workspace, setWorkspace] = useState("My workspace");
+  const { theme, toggle } = useTheme();
 
   return (
     <header
@@ -161,6 +163,18 @@ export default function TopNav({ variant = "app" }) {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          {/* Theme toggle — visible in every variant. */}
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            data-testid="theme-toggle"
+            className="relative w-9 h-9 rounded-lg border border-move-border bg-move-surface hover:bg-move-bg-subtle flex items-center justify-center text-move-ink transition-colors"
+          >
+            <Sun className={`w-4 h-4 absolute transition-all ${theme === "dark" ? "opacity-0 -rotate-90 scale-50" : "opacity-100 rotate-0 scale-100"}`} />
+            <Moon className={`w-4 h-4 absolute transition-all ${theme === "dark" ? "opacity-100 rotate-0 scale-100" : "opacity-0 rotate-90 scale-50"}`} />
+          </button>
 
           {variant === "marketing" ? (
             <>

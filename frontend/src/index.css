@@ -82,6 +82,60 @@ html, body {
         --ring: 220 20% 65%;
         --radius: 0.75rem;
     }
+
+    /* ── DARK THEME ── Linear / Vercel / Notion-grade dark palette.
+       Charcoal base, warm coral/mauve accents preserved so the brand
+       identity carries across modes. */
+    .dark {
+        --color-bg: #0B0E14;
+        --color-surface: #131720;
+        --color-ink: #F2F1EE;
+        --color-body: #B4B7C0;
+        --color-muted: #888B97;
+        --color-border: #21262F;
+        --color-border-ghost: #2C313B;
+        --color-grad-1: #E7A77A;
+        --color-grad-2: #D095A6;
+        --color-grad-3: #8F9DD6;
+
+        --color-bg-subtle: #181C25;
+        --color-surface-hover: #1A1E27;
+        --color-ink-hover: #FFFFFF;
+        --color-ink-pressed: #E5E4E0;
+        --color-ink-disabled: #5A5D67;
+        --color-border-disabled: #1E222B;
+        --color-focus-ring: rgba(143, 157, 214, 0.45);
+        --color-grad-1-tint: rgba(231, 167, 122, 0.14);
+        --color-grad-2-tint: rgba(208, 149, 166, 0.14);
+        --color-grad-3-tint: rgba(143, 157, 214, 0.16);
+        --color-error: #E07566;
+        --color-error-bg: rgba(224, 117, 102, 0.10);
+        --color-success: #7BAF8F;
+        --color-success-bg: rgba(123, 175, 143, 0.12);
+        --color-warning: #DBA75A;
+        --color-warning-bg: rgba(219, 167, 90, 0.12);
+
+        --gradient-headline: linear-gradient(90deg, var(--color-grad-1), var(--color-grad-2), var(--color-grad-3));
+        --gradient-hero-card: linear-gradient(140deg, var(--color-grad-1), var(--color-grad-2), var(--color-grad-3));
+
+        --background: 220 28% 6%;
+        --foreground: 40 12% 94%;
+        --card: 222 22% 10%;
+        --card-foreground: 40 12% 94%;
+        --popover: 222 22% 10%;
+        --popover-foreground: 40 12% 94%;
+        --primary: 40 12% 94%;
+        --primary-foreground: 222 28% 8%;
+        --secondary: 220 18% 12%;
+        --secondary-foreground: 40 12% 94%;
+        --muted: 220 18% 12%;
+        --muted-foreground: 220 8% 60%;
+        --accent: 222 32% 60%;
+        --accent-foreground: 222 28% 8%;
+        --border: 222 14% 18%;
+        --input: 222 14% 18%;
+        --ring: 222 32% 60%;
+    }
 }
 
 @layer base {
