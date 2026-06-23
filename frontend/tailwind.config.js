@@ -5,31 +5,56 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                heading: ['Roboto', 'system-ui', 'sans-serif'],
-                sans: ['Roboto', 'system-ui', 'sans-serif'],
-                mono: ['Roboto Mono', 'ui-monospace', 'monospace'],
+                heading: ['-apple-system', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                sans: ['-apple-system', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                mono: ['ui-monospace', '"Cascadia Code"', '"Source Code Pro"', 'Menlo', 'Consolas', 'monospace'],
             },
             borderRadius: {
-                lg: 'var(--radius)',
-                md: 'calc(var(--radius) - 2px)',
-                sm: 'calc(var(--radius) - 4px)'
+                lg: 'var(--radius-lg)',
+                md: 'var(--radius-md)',
+                sm: 'var(--radius-sm)',
+                xl: 'var(--radius-xl)',
             },
             colors: {
+                // MOVE Design System colors
+                move: {
+                    bg: 'var(--color-bg)',
+                    surface: 'var(--color-surface)',
+                    ink: 'var(--color-ink)',
+                    body: 'var(--color-body)',
+                    muted: 'var(--color-muted)',
+                    border: 'var(--color-border)',
+                    'border-ghost': 'var(--color-border-ghost)',
+                    'grad-1': 'var(--color-grad-1)',
+                    'grad-2': 'var(--color-grad-2)',
+                    'grad-3': 'var(--color-grad-3)',
+                    'bg-subtle': 'var(--color-bg-subtle)',
+                    'surface-hover': 'var(--color-surface-hover)',
+                    error: 'var(--color-error)',
+                    'error-bg': 'var(--color-error-bg)',
+                    success: 'var(--color-success)',
+                    'success-bg': 'var(--color-success-bg)',
+                    warning: 'var(--color-warning)',
+                    'warning-bg': 'var(--color-warning-bg)',
+                },
+                // Legacy ink colors mapped to MOVE tokens for backward compatibility
                 ink: {
-                    bg: '#0A0613',
-                    surface: '#15101F',
-                    elevated: '#1E1530',
-                    border: '#2A1F3D',
-                    text: '#F8FAFC',
-                    muted: '#A89FB8',
+                    bg: 'var(--color-bg)',
+                    surface: 'var(--color-surface)',
+                    elevated: 'var(--color-surface-hover)',
+                    border: 'var(--color-border)',
+                    text: 'var(--color-ink)',
+                    muted: 'var(--color-muted)',
                 },
+                // Legacy brand colors mapped to MOVE tokens
                 brand: {
-                    primary: '#A855F7',
-                    secondary: '#22D3EE',
-                    accent: '#E879F9',
-                    success: '#10B981',
-                    warning: '#F59E0B',
+                    primary: 'var(--color-ink)',
+                    secondary: 'var(--color-grad-3)',
+                    accent: 'var(--color-grad-2)',
+                    success: 'var(--color-success)',
+                    warning: 'var(--color-warning)',
                 },
+                // Shadcn compatibility
                 background: 'hsl(var(--background))',
                 foreground: 'hsl(var(--foreground))',
                 card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
@@ -42,13 +67,6 @@ module.exports = {
                 border: 'hsl(var(--border))',
                 input: 'hsl(var(--input))',
                 ring: 'hsl(var(--ring))',
-                chart: {
-                    '1': 'hsl(var(--chart-1))',
-                    '2': 'hsl(var(--chart-2))',
-                    '3': 'hsl(var(--chart-3))',
-                    '4': 'hsl(var(--chart-4))',
-                    '5': 'hsl(var(--chart-5))',
-                },
             },
             keyframes: {
                 'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },

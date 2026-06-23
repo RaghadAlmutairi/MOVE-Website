@@ -46,7 +46,7 @@ export default function CommandCenter() {
           <h1 className="text-3xl font-bold tracking-tight" data-testid="cc-title">Strategy Studio</h1>
         </div>
         <Button onClick={() => navigate("/studio")} data-testid="cc-go-studio" className="bg-brand-primary hover:bg-[#9333EA] text-white text-base">
-          Open Content Studio <ArrowRight className="ml-2 w-4 h-4" />
+          Open Content Page <ArrowRight className="ml-2 w-4 h-4" />
         </Button>
       </div>
 

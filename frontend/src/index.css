@@ -4,91 +4,148 @@
 
 html, body {
     margin: 0;
-    background-color: #0A0613;
-    color: #F8FAFC;
-    font-family: 'Roboto', system-ui, sans-serif;
+    background-color: #FBFAF7;
+    color: #1A1D2E;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 16px;
-    line-height: 1.55;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-    background: rgba(168, 85, 247, 0.4);
-    color: #F8FAFC;
+    background: rgba(107, 123, 168, 0.25);
+    color: #1A1D2E;
 }
 
 @layer base {
     :root {
-        --background: 263 47% 6%;
-        --foreground: 210 40% 98%;
-        --card: 263 30% 11%;
-        --card-foreground: 210 40% 98%;
-        --popover: 263 30% 11%;
-        --popover-foreground: 210 40% 98%;
-        --primary: 271 91% 65%;
+        /* MOVE Design System Tokens */
+        --color-bg: #FBFAF7;
+        --color-surface: #FFFFFF;
+        --color-ink: #1A1D2E;
+        --color-body: #5A6075;
+        --color-muted: #7A7F90;
+        --color-border: #E5E3DC;
+        --color-border-ghost: #C8C5BC;
+        --color-grad-1: #D4956B;
+        --color-grad-2: #B97A8A;
+        --color-grad-3: #6B7BA8;
+        
+        /* Derived / state */
+        --color-bg-subtle: #F4F2ED;
+        --color-surface-hover: #FCFBF9;
+        --color-ink-hover: #2A2E45;
+        --color-ink-pressed: #10121C;
+        --color-ink-disabled: #9B9DA8;
+        --color-border-disabled: #EDEBE5;
+        --color-focus-ring: rgba(107, 123, 168, 0.35);
+        --color-grad-1-tint: rgba(212, 149, 107, 0.12);
+        --color-grad-2-tint: rgba(185, 122, 138, 0.12);
+        --color-grad-3-tint: rgba(107, 123, 168, 0.12);
+        --color-error: #B5544A;
+        --color-error-bg: rgba(181, 84, 74, 0.08);
+        --color-success: #5E8F6F;
+        --color-success-bg: rgba(94, 143, 111, 0.08);
+        --color-warning: #C08B3E;
+        --color-warning-bg: rgba(192, 139, 62, 0.08);
+        
+        /* Radius */
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 20px;
+        
+        /* Gradients */
+        --gradient-headline: linear-gradient(90deg, var(--color-grad-1), var(--color-grad-2), var(--color-grad-3));
+        --gradient-hero-card: linear-gradient(140deg, var(--color-grad-1), var(--color-grad-2), var(--color-grad-3));
+        
+        /* Shadcn compatibility mappings */
+        --background: 40 20% 98%;
+        --foreground: 228 24% 15%;
+        --card: 0 0% 100%;
+        --card-foreground: 228 24% 15%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 228 24% 15%;
+        --primary: 228 24% 15%;
         --primary-foreground: 0 0% 100%;
-        --secondary: 263 30% 15%;
-        --secondary-foreground: 210 40% 98%;
-        --muted: 263 30% 15%;
-        --muted-foreground: 215 20% 65%;
-        --accent: 292 84% 73%;
+        --secondary: 40 15% 96%;
+        --secondary-foreground: 228 24% 15%;
+        --muted: 40 15% 96%;
+        --muted-foreground: 220 14% 50%;
+        --accent: 220 20% 65%;
         --accent-foreground: 0 0% 100%;
-        --destructive: 0 84.2% 60.2%;
+        --destructive: 5 60% 50%;
         --destructive-foreground: 0 0% 98%;
-        --border: 263 25% 18%;
-        --input: 263 25% 18%;
-        --ring: 271 91% 65%;
-        --chart-1: 271 91% 65%;
-        --chart-2: 187 95% 55%;
-        --chart-3: 292 84% 73%;
-        --chart-4: 158 64% 39%;
-        --chart-5: 38 92% 50%;
+        --border: 40 20% 90%;
+        --input: 40 20% 90%;
+        --ring: 220 20% 65%;
         --radius: 0.75rem;
     }
 }
 
 @layer base {
     * { @apply border-border; }
-    body { @apply bg-ink-bg text-ink-text; }
-    h1, h2, h3, h4, h5, h6 { font-family: 'Roboto', system-ui, sans-serif; letter-spacing: -0.01em; font-weight: 700; }
+    body {
+        background-color: var(--color-bg);
+        color: var(--color-ink);
+    }
+    h1, h2, h3, h4, h5, h6 {
+        font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        letter-spacing: -0.02em;
+        font-weight: 500;
+        color: var(--color-ink);
+    }
 }
 
 @layer utilities {
-    .text-gradient-ai {
-        background: linear-gradient(90deg, #22D3EE 0%, #E879F9 50%, #A855F7 100%);
-        background-size: 200% 100%;
+    /* MOVE gradient text for headlines */
+    .text-gradient-move {
+        background: var(--gradient-headline);
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
-        animation: gradient-shift 8s ease infinite;
     }
+    
+    /* Legacy gradient support */
+    .text-gradient-ai {
+        background: var(--gradient-headline);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    /* Glass effect updated for light mode */
     .glass {
-        background: rgba(19, 26, 42, 0.6);
+        background: rgba(255, 255, 255, 0.8);
         backdrop-filter: blur(18px);
         -webkit-backdrop-filter: blur(18px);
-        border: 1px solid rgba(30, 41, 59, 0.8);
+        border: 1px solid var(--color-border);
     }
-    .glow-primary { box-shadow: 0 0 32px -4px rgba(168, 85, 247, 0.35); }
-    .glow-accent { box-shadow: 0 0 28px -6px rgba(232, 121, 249, 0.45); }
+    
+    /* Dark glass for status pills */
+    .glass-dark {
+        background: rgba(26, 29, 46, 0.8);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(26, 29, 46, 0.9);
+    }
+    
+    /* No glows in MOVE design - removed */
+    
+    /* Grid background updated for warm palette */
     .grid-bg {
         background-image:
-            linear-gradient(rgba(168, 85, 247, 0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(168, 85, 247, 0.06) 1px, transparent 1px);
+            linear-gradient(var(--color-border) 1px, transparent 1px),
+            linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
         background-size: 56px 56px;
     }
-    .noise::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        opacity: 0.04;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    }
+    
+    /* Scrollbar for light mode */
     .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
     .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-    .scrollbar-thin::-webkit-scrollbar-thumb { background: #2A1F3D; border-radius: 8px; }
-    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #A855F7; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--color-border-ghost); border-radius: 8px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--color-grad-3); }
 }
 
 [data-debug-wrapper="true"] { display: contents !important; }

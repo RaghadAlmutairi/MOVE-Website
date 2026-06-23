@@ -3,10 +3,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Globe, MessageSquare, Loader2, ArrowRight, Sparkles, ChevronRight, CheckCircle2, RefreshCw,
-  AlertTriangle, TrendingUp, Lightbulb, ShieldAlert, Users, ExternalLink,
+  AlertTriangle, TrendingUp, Lightbulb, ShieldAlert, Users, ExternalLink, BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
+import ProgressTracker from "@/components/ProgressTracker";
+import ResearchSourcesDrawer from "@/components/ResearchSourcesDrawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +24,7 @@ export default function CompanyResearch() {
   const [query, setQuery] = useState("");
   const [url, setUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
 
   const status = run?.status;
   const stage = run?.stage;
@@ -31,6 +34,18 @@ export default function CompanyResearch() {
   const isResearchRunning = status === "running" && stage === "research";
   const isAwaiting = status === "awaiting_research_approval";
   const isFailed = status === "failed";
+
+  // Determine progress tracker state
+  const completedStages = [];
+  if (status && status !== 'awaiting_research_approval' && status !== 'running') {
+    completedStages.push('research');
+  }
+  if (status && ['awaiting_phase_b_approval', 'complete', 'ready_for_phase_b'].includes(status)) {
+    completedStages.push('strategy', 'content');
+  }
+  
+  const currentStage = isResearchRunning ? 'research' :
+                       (status === 'awaiting_research_approval' ? 'research' : null);
 
   const onAnalyze = async () => {
     if (!query.trim()) { toast.error("Please enter a company name"); return; }
@@ -60,40 +75,60 @@ export default function CompanyResearch() {
   };
 
   return (
-    <div className="min-h-screen bg-ink-bg">
+    <div className="min-h-screen bg-move-bg">
       <TopNav />
+      <ProgressTracker currentStage={currentStage} completedStages={completedStages} />
+      
       <main className="max-w-[1600px] mx-auto px-6 lg:px-10 py-8">
         <Breadcrumb crumbs={[{ to: "/", label: "Home" }, { label: "Research" }]} />
 
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-heading text-5xl font-bold tracking-tight">Research</h1>
-            <p className="text-ink-muted mt-2 text-lg">Enter a company name to launch the multi-agent research pipeline.</p>
+            <h1 className="font-heading text-5xl font-medium tracking-tight text-move-ink" style={{ fontWeight: 500 }}>Research</h1>
+            <p className="text-move-body mt-2 text-lg">Enter a company name to launch the multi-agent research pipeline.</p>
           </div>
-          <Badge variant="outline" className="border-brand-success/40 text-brand-success bg-brand-success/10 w-fit text-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-success mr-2 animate-pulse" /> Engine online
-          </Badge>
+          <div className="flex items-center gap-3">
+            {view && (
+              <Button
+                variant="outline"
+                onClick={() => setSourcesOpen(true)}
+                className="border-move-border-ghost text-move-ink hover:bg-move-bg-subtle"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Sources
+              </Button>
+            )}
+            <Badge variant="outline" className="border-move-success/40 text-move-success bg-move-success-bg w-fit text-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-move-success mr-2 animate-pulse" /> Engine online
+            </Badge>
+          </div>
         </div>
 
+        <ResearchSourcesDrawer
+          open={sourcesOpen}
+          onOpenChange={setSourcesOpen}
+          sources={view?.sources || []}
+        />
+
         {/* Query form */}
-        <div className="rounded-xl border border-ink-border bg-ink-surface p-6 mb-8">
+        <div className="rounded-[16px] border border-move-border bg-move-surface p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             <div className="md:col-span-7">
-              <label className="text-sm font-medium text-ink-text mb-2 block">Company name</label>
+              <label className="text-sm font-medium text-move-ink mb-2 block" style={{ fontWeight: 500 }}>Company name</label>
               <div className="relative">
-                <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-ink-muted" />
-                <Input data-testid="research-query" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g., Stripe, OpenAI, your own brand…" className="pl-10 h-12 text-base bg-ink-bg border-ink-border text-ink-text" />
+                <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-move-muted" />
+                <Input data-testid="research-query" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g., Stripe, OpenAI, your own brand…" className="pl-10 h-12 text-base bg-move-bg border-move-border-ghost text-move-ink" />
               </div>
             </div>
             <div className="md:col-span-3">
-              <label className="text-sm font-medium text-ink-text mb-2 block">Company URL <span className="text-ink-muted font-normal">(optional)</span></label>
+              <label className="text-sm font-medium text-move-ink mb-2 block" style={{ fontWeight: 500 }}>Company URL <span className="text-move-muted font-normal">(optional)</span></label>
               <div className="relative">
-                <Globe className="absolute left-3 top-3 w-4 h-4 text-ink-muted" />
-                <Input data-testid="research-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" className="pl-10 h-12 text-base bg-ink-bg border-ink-border text-ink-text" />
+                <Globe className="absolute left-3 top-3 w-4 h-4 text-move-muted" />
+                <Input data-testid="research-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" className="pl-10 h-12 text-base bg-move-bg border-move-border-ghost text-move-ink" />
               </div>
             </div>
             <div className="md:col-span-2">
-              <Button onClick={onAnalyze} disabled={submitting || isResearchRunning} data-testid="research-analyze-btn" className="w-full h-12 text-base bg-brand-primary hover:bg-[#9333EA] text-white shadow-lg shadow-brand-primary/30">
+              <Button onClick={onAnalyze} disabled={submitting || isResearchRunning} data-testid="research-analyze-btn" className="w-full h-12 text-base bg-move-ink hover:bg-move-ink-hover text-white rounded-[12px] font-medium" style={{ fontWeight: 500 }}>
                 {submitting || isResearchRunning ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-1.5" />Research</>}
               </Button>
             </div>

@@ -1,0 +1,35 @@
+{
+  "summary": "Fresh-fork smoke test of MOVE GTM platform after UI redesign. Backend: 9/9 pytest cases passed including full HITL lifecycle (create_run -> poll to awaiting_research_approval -> chat scope=research -> delete). Frontend: landing hero/logo/CTA verified; all 5 TopNav testids present; RunStatusPill renders; ResearchSourcesDrawer correctly hidden when no run AND no inline sources on /research; /ideation, /studio, /command-center all render without runtime errors. Zero page errors across all navigations.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RunContext is in-memory only; activeRun id is persisted to localStorage but the run state is not auto-rehydrated on page refresh/new session. This is currently fine for the agent flow (user creates a fresh run each visit) but may surprise users who expect their last run to reappear. Consider auto-loading the run by id on app mount.",
+    "RunStatusPill is fine, but data-testid is not present on the pill element itself; we identified it via text 'No active run' / 'Running'. Adding data-testid=\"run-status-pill\" would harden future tests.",
+    "TopNav nav-studio points to /command-center and nav-content points to /studio (swapped semantics with route names). Labels work, but the route naming is confusing for future maintenance."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9)",
+    "frontend": "100% (all critical flows verified, 0 pageerrors)"
+  },
+  "test_credentials": "N/A — app has no user auth",
+  "seed_data_creation": "Created and deleted 1 test run with query 'Anthropic competitive brief' as part of the lifecycle test (cleaned up).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest suite at /app/backend/tests/backend_test.py covers health, list_runs, full create→poll→chat→delete lifecycle (~2-3 min runtime due to real agent), and negative cases. UI redesign verified: hero 'Outthink the market. Outmove the competition.' renders, MOVE dark-capsule logo lockup is visible, CTA 'Start building GTM strategy' navigates to /research. ResearchSourcesDrawer behaves correctly — Sources button only shows when a research result view exists, drawer never renders inline. NOTE: RunContext is in-memory so a fresh browser session won't re-hydrate the previous run automatically.",
+  "rca of the issue": "No bugs found — all backend endpoints and UI flows behave as expected after the redesign."
+}

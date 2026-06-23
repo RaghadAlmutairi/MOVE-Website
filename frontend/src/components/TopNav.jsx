@@ -34,13 +34,30 @@ export default function TopNav({ variant = "app" }) {
       }`}
     >
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 h-16 flex items-center gap-6">
-        <Link to="/" data-testid="nav-logo" className="flex items-center group -my-2">
-          <img
-            src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/den8bpor_new%20move%20logo.png"
-            alt="MOVE — Marketing Opportunity Value Executor"
-            className="h-14 w-auto object-contain"
-            style={{ mixBlendMode: 'lighten' }}
-          />
+        <Link to="/" data-testid="nav-logo" className="flex items-center gap-2 group">
+          <span
+            className="inline-flex items-center justify-center rounded-xl overflow-hidden bg-[#0B0A14] shadow-sm"
+            style={{ width: 40, height: 40 }}
+          >
+            <img
+              src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/den8bpor_new%20move%20logo.png"
+              alt=""
+              aria-hidden="true"
+              className="object-cover"
+              style={{ width: 80, height: 80, objectPosition: 'center 35%' }}
+            />
+          </span>
+          <span
+            className="text-[17px] font-semibold tracking-tight"
+            style={{
+              backgroundImage: 'var(--gradient-headline)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}
+          >
+            MOVE
+          </span>
         </Link>
 
         {variant === "app" && (

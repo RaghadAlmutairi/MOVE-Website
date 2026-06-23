@@ -174,7 +174,7 @@ export default function StrategyIdeation() {
         <div className="rounded-xl border border-brand-primary/40 bg-brand-primary/10 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <div className="text-lg font-semibold text-ink-text">Strategy is locked in</div>
-            <div className="text-sm text-ink-muted">Open the Content Studio to generate social posts and reports.</div>
+            <div className="text-sm text-ink-muted">Open the Content Page to generate social posts and reports.</div>
           </div>
           <Button onClick={() => navigate("/studio")} className="bg-brand-primary hover:bg-[#9333EA] text-white" data-testid="go-studio">
             Open Studio <ArrowRight className="ml-2 w-4 h-4" />
