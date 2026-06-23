@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   ArrowRight, ChevronRight, CheckCircle2, RefreshCw, AlertTriangle, Loader2, Sparkles, Target,
@@ -10,12 +10,7 @@ import ProgressTracker from "@/components/ProgressTracker";
 import StageNav from "@/components/StageNav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import {
-  PositioningPanel, ICPPanel, CompetitiveEdgeTable, PricingPanel, MotionPanel,
-  ChannelPlaysTable, MessagingByPersonaList, ContentEnginePanel, SalesPlaybookPanel,
-  DemandGenPanel, MetricsPanel, RoadmapPanel, RisksTable,
-} from "@/components/visuals/StrategyVisuals";
+import StrategyStudio from "@/components/visuals/StrategyStudio";
 import { useRun } from "@/lib/RunContext";
 import { api } from "@/lib/api";
 import { getStrategyView, getReportView, hasStrategy } from "@/lib/transforms";
@@ -27,7 +22,6 @@ export default function StrategyIdeation() {
   const strategy = useMemo(() => (result ? getStrategyView(result) : null), [result]);
   const report = useMemo(() => (result ? getReportView(result) : null), [result]);
   const status = run?.status;
-  const [fullOpen, setFullOpen] = useState([]);   // accordion items open
   const chosenDirection = run?.strategy_direction;
 
   const awaitingStrategy = status === "awaiting_strategy_approval";
@@ -103,17 +97,16 @@ export default function StrategyIdeation() {
             onApprove={async () => { try { await mutate(() => api.approveStrategy(run.id)); toast.success("Strategy approved", { description: "Generating content suite…" }); navigate("/studio"); } catch (e) { toast.error(e.message); } }}
             onRegenerate={async () => { try { await mutate(() => api.regenerateStrategy(run.id)); toast.success("Regenerating strategy…"); } catch (e) { toast.error(e.message); } }}
             onOpenFull={() => {
-              setFullOpen(["positioning", "swot", "messaging", "priorities"]);
-              setTimeout(() => document.getElementById("strategy-full")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+              document.getElementById("strategy-full")?.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
           />
 
-          {/* ── Full strategy — real agent sections only ─ */}
-          <FullStrategyAccordion
-            strategy={strategy}
-            fullOpen={fullOpen}
-            setFullOpen={setFullOpen}
-          />
+          {/* ── Full strategy — Studio tabbed layout (Overview / Audience /
+                Messaging / Channels / Roadmap / Metrics) using real agent
+                data only. */}
+          <div id="strategy-full" data-testid="strategy-full" className="mt-10">
+            <StrategyStudio strategy={strategy} />
+          </div>
 
           {(status === "awaiting_content_approval" || status === "complete") && (
             <div className="mt-8 rounded-[16px] border border-move-grad-3/40 bg-move-grad-3-tint p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -142,87 +135,6 @@ export default function StrategyIdeation() {
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-// Each entry only mounts an Accordion item when the underlying data exists,
-// so the user never sees an empty / fabricated section.
-function FullStrategyAccordion({ strategy, fullOpen, setFullOpen }) {
-  const f = strategy.foundation || {};
-  const a = strategy.activation || {};
-  const x = strategy.execution || {};
-
-  const sections = [
-    { id: "positioning",  title: "Positioning",         icon: Target,
-      visible: !!(f.positioning || (f.slot && Object.keys(f.slot).length)),
-      body: () => <PositioningPanel positioning={f.positioning} slot={f.slot} /> },
-    { id: "icp",          title: "Ideal customer profile", icon: Compass,
-      visible: !!(f.icp && Object.keys(f.icp).length) || f.topPains?.length || f.triggers?.length || f.disqualifiers?.length || f.secondarySegments?.length || (f.beachhead && Object.keys(f.beachhead).length),
-      body: () => <ICPPanel icp={f.icp} topPains={f.topPains} triggers={f.triggers}
-                            disqualifiers={f.disqualifiers} secondarySegments={f.secondarySegments}
-                            beachhead={f.beachhead} /> },
-    { id: "edge",         title: "Competitive edge",    icon: AlertTriangle,
-      visible: !!(f.competitiveEdges && f.competitiveEdges.length),
-      body: () => <CompetitiveEdgeTable edges={f.competitiveEdges} /> },
-    { id: "pricing",      title: "Offer & pricing",     icon: Sparkles,
-      visible: !!(a.pricing && (a.pricing.packaging || a.pricing.anchor || (a.pricing.tiers || []).length)),
-      body: () => <PricingPanel pricing={a.pricing} /> },
-    { id: "motion",       title: "GTM motion",          icon: FlagTriangleRight,
-      visible: !!(a.motion && (a.motion.primary || a.motion.secondary || a.motion.rationale || (a.motion.risks || []).length)),
-      body: () => <MotionPanel motion={a.motion} /> },
-    { id: "channels",     title: "Channel plays",       icon: Sparkles,
-      visible: !!(a.channelPlays && a.channelPlays.length),
-      body: () => <ChannelPlaysTable plays={a.channelPlays} /> },
-    { id: "messaging",    title: "Messaging by persona", icon: Sparkles,
-      visible: !!(a.messagingByPersona && a.messagingByPersona.length),
-      body: () => <MessagingByPersonaList list={a.messagingByPersona} /> },
-    { id: "content",      title: "Content engine",      icon: Sparkles,
-      visible: !!(a.contentEngine && Object.keys(a.contentEngine).length),
-      body: () => <ContentEnginePanel engine={a.contentEngine} /> },
-    { id: "sales",        title: "Sales playbook",      icon: Compass,
-      visible: !!(x.salesPlaybook && (x.salesPlaybook.qualification || (x.salesPlaybook.stages || []).length)),
-      body: () => <SalesPlaybookPanel playbook={x.salesPlaybook} /> },
-    { id: "demand",       title: "Demand-gen mix",      icon: Sparkles,
-      visible: !!(x.demandGen && Object.keys(x.demandGen).length),
-      body: () => <DemandGenPanel demand={x.demandGen} /> },
-    { id: "metrics",      title: "Metrics & north star", icon: CheckCircle2,
-      visible: !!(strategy.northStar || (x.metrics && Object.keys(x.metrics).length)),
-      body: () => <MetricsPanel metrics={x.metrics} northStar={strategy.northStar} /> },
-    { id: "roadmap",      title: "90-day execution roadmap", icon: FlagTriangleRight,
-      visible: !!(x.roadmap && x.roadmap.length),
-      body: () => <RoadmapPanel phases={x.roadmap} /> },
-    { id: "risks",        title: "Strategic risks & mitigations", icon: AlertTriangle,
-      visible: !!(x.risks && x.risks.length),
-      body: () => <RisksTable risks={x.risks} /> },
-  ].filter((s) => s.visible);
-
-  const allIds = sections.map((s) => s.id);
-  const allOpen = fullOpen.length === allIds.length && allIds.every((id) => fullOpen.includes(id));
-
-  return (
-    <section id="strategy-full" className="mt-10" data-testid="strategy-full">
-      <div className="flex items-center gap-2 mb-4">
-        <FlagTriangleRight className="w-5 h-5 text-move-ink" />
-        <h2 className="text-xl font-medium text-move-ink" style={{ fontWeight: 500 }}>Full strategy</h2>
-        <span className="text-xs text-move-muted">({sections.length} sections)</span>
-        <div className="ml-3 h-px flex-1 bg-move-border" />
-        <button
-          onClick={() => setFullOpen(allOpen ? [] : allIds)}
-          data-testid="strategy-toggle-all"
-          className="text-xs text-move-muted hover:text-move-ink"
-        >
-          {allOpen ? "Collapse all" : "Expand all"}
-        </button>
-      </div>
-
-      <Accordion type="multiple" value={fullOpen} onValueChange={setFullOpen} className="space-y-3">
-        {sections.map((sec) => (
-          <AccordionSection key={sec.id} id={sec.id} title={sec.title} icon={sec.icon}>
-            {sec.body()}
-          </AccordionSection>
-        ))}
-      </Accordion>
-    </section>
-  );
-}
 
 function StrategySummaryCard({ northStar, positioningLine, targetSegment, primaryMotion,
                                chosenDirection, awaitingStrategy,
@@ -301,21 +213,6 @@ function SummaryTile({ label, icon: Icon, children }) {
   );
 }
 
-function AccordionSection({ id, title, icon: Icon, children }) {
-  return (
-    <AccordionItem value={id} className="rounded-[16px] border border-move-border bg-move-surface overflow-hidden" data-testid={`accordion-${id}`}>
-      <AccordionTrigger className="px-5 py-4 hover:no-underline group">
-        <div className="flex items-center gap-3 flex-1">
-          <Icon className="w-4 h-4 text-move-ink shrink-0" />
-          <span className="text-base font-medium text-move-ink text-left" style={{ fontWeight: 500 }}>{title}</span>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="px-5 pb-5">
-        {children}
-      </AccordionContent>
-    </AccordionItem>
-  );
-}
 
 function SkeletonCard() {
   return (
