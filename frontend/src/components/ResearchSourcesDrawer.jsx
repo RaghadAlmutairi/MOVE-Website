@@ -57,13 +57,13 @@ export default function ResearchSourcesDrawer({ open, onOpenChange, sources = []
 }
 
 function SourceCard({ source, index }) {
-  const { url, title, publication, date, type, snippet } = source;
-
+  const { id, url, title, publication, date, type, snippet, domain, official, role } = source;
+  const label = id || index;
   return (
-    <div className="rounded-[12px] border border-move-border bg-move-bg p-4 hover:bg-move-bg-subtle transition-colors">
+    <div className="rounded-[12px] border border-move-border bg-move-bg p-4 hover:bg-move-bg-subtle transition-colors" data-testid={`source-${id || index}`}>
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-move-grad-3-tint border border-move-grad-3/30 flex items-center justify-center">
-          <span className="text-[11px] font-medium text-move-grad-3" style={{ fontWeight: 500 }}>{index}</span>
+        <div className="flex-shrink-0 w-7 h-7 rounded-md bg-move-grad-3-tint border border-move-grad-3/30 flex items-center justify-center">
+          <span className="text-[11px] font-medium text-move-grad-3" style={{ fontWeight: 500 }}>[{label}]</span>
         </div>
         <div className="flex-1 min-w-0">
           {title && (
@@ -71,13 +71,14 @@ function SourceCard({ source, index }) {
               {title}
             </h4>
           )}
-          {publication && (
-            <div className="text-[12px] text-move-muted mb-2">
-              {publication}
-              {date && ` · ${date}`}
-              {type && ` · ${type}`}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-move-muted mb-2">
+            {(publication || domain) && <span>{publication || domain}</span>}
+            {date && <span>· {date}</span>}
+            {(type || role) && <span>· {type || role}</span>}
+            {official && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-move-success-bg text-move-success border border-move-success/30">official</span>
+            )}
+          </div>
           {snippet && (
             <p className="text-[13px] text-move-body leading-relaxed mb-3 line-clamp-3">
               {snippet}

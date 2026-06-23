@@ -55,7 +55,8 @@ export default function CopilotPanel() {
         <button
           data-testid="copilot-fab"
           onClick={() => setCollapsed(false)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full pl-3 pr-4 py-3 shadow-xl text-white bg-move-ink hover:bg-move-ink-hover transition-all"
+          style={{ zIndex: 10001 }}
+          className="fixed bottom-20 right-6 flex items-center gap-2 rounded-full pl-3 pr-4 py-3 shadow-xl text-white bg-move-ink hover:bg-move-ink-hover transition-all"
           aria-label="Open AI Copilot"
         >
           <span className="w-7 h-7 rounded-full bg-gradient-to-br from-move-grad-1 via-move-grad-2 to-move-grad-3 flex items-center justify-center">
@@ -70,7 +71,8 @@ export default function CopilotPanel() {
         <aside
           data-testid="copilot-panel"
           aria-label={META[stage].name}
-          className="fixed right-4 bottom-4 top-28 w-[380px] z-40 hidden lg:flex flex-col rounded-2xl border border-move-border bg-move-surface shadow-2xl overflow-hidden"
+          style={{ zIndex: 10001 }}
+          className="fixed right-4 bottom-20 top-28 w-[380px] hidden lg:flex flex-col rounded-2xl border border-move-border bg-move-surface shadow-2xl overflow-hidden"
         >
           <CopilotInner stage={stage} onCollapse={() => setCollapsed(true)} />
         </aside>

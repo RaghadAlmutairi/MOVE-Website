@@ -1,0 +1,61 @@
+{
+  "summary": "Iteration 5 retest of the Research page redesign + Copilot z-index fix on seeded run 7da57a83-626e-47b2-9289-044d2e4fbd6c at 1920x1080. ALL spec requirements verified PASS: (1) Page loads with no React render errors / no pageerrors; full title 'OpenAI – Executive Market Brief (Global, AI Research and Deployment Platforms)' visible; industry 'Artificial Intelligence and Machine Learning' + geography 'Global' visible. (2) Sticky left sidebar TOC ([data-testid='research-toc']) renders with all 8 entries (toc-executive-summary, -swot, -opportunities, -risks, -recommendations, -trends, -competitors, -personas). Clicking toc-competitors smooth-scrolled from y=0 to y=3122. (3) All 8 corresponding sections present (section-executive-summary, -swot, -opportunities, -risks, -recommendations, -trends, -competitors, -personas). (4) Executive summary block ([data-testid='research-exec-summary'], 1147 chars) renders cleanly with NO inline [N] citation markers. (5) SWOT matrix is a 2x2 grid with all 4 quadrants present: swot-strengths (4 items), swot-weaknesses (2 items), swot-opportunities, swot-threats. (6) opportunity-list / risk-list / recommendation-list wrappers render with 4 / 4 / 6 individual expandable cards respectively. (7) Competitors are a TABLE ([data-testid='research-competitors-table']) with 7 competitor-row-N rows. (8) Buyer personas ([data-testid='research-personas']) renders 4 persona-card-N cards. (9) Sources button ([data-testid='open-sources']) opens drawer which lists 66 [data-testid='source-N'] entries; first entry sample: '[1]OpenAIopenai.smapply.org· subject_officialofficialhttps://openai.smapply.org/' (citation [id] label + official badge + clickable URL). (10) COPILOT Z-INDEX FIX VERIFIED: panel z-index=10001 vs #emergent-badge z-index=9999. document.elementFromPoint at centre of [data-testid='copilot-send-research'] resolves to <BUTTON data-testid='copilot-send-research'> (NOT the <a id='emergent-badge'>). Send button rect is now ≈(1856,947,34,40) sitting ABOVE the 40px badge at (1726,1024,178,40). (11) Mouse-click send on /research: typed 'hello' into copilot-input-research, clicked copilot-send-research (force=False, real-mouse path), waited 15s — message count went 1 → 3 (intro + user 'hello' + assistant response 'Hello! How can I assist you today?...'). Chat API 200.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ResearchVisuals.jsx — PersonaCard",
+        "issue": "MINOR: Persona section still leaks ONE inline citation marker ('[59]') into the visible body. stripCitations() is applied to segment / messaging_angle / goals / pain_points / buying_triggers, but role_title and persona_name are rendered raw ({p.role_title} on line 208, {p.persona_name} on line 207). One persona in the seeded run has '[59]' embedded in role_title. Fix: wrap role_title and persona_name in stripCitations() inside PersonaCard.",
+        "selector": "[data-testid='research-personas'] / [data-testid^='persona-card-']",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "ResearchVisuals.jsx — SwotQuadrant",
+        "issue": "MINOR (console warning): SwotQuadrant destructures `key` from its props (`function SwotQuadrant({ label, items, tone, icon: Icon, key })`). React emits 'key is not a prop. Trying to access it will result in undefined being returned' + a separate 'A props object containing a key prop is being spread into JSX' warning. The destructuring of `key` should be removed (it is a special React prop; if needed inside, pass it as a non-reserved name like `quadrantKey`).",
+        "selector": "n/a (console)",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_passing": [
+    "Page renders with no pageerrors and seeded run loads",
+    "Header: full title + industry + geography all visible",
+    "Sticky TOC with 8 entries, smooth-scroll on click works",
+    "All 8 sections rendered with correct data-testids",
+    "Executive summary: clean text, no [N] markers, 1147 chars",
+    "SWOT 2x2 matrix with all 4 quadrants",
+    "Opportunities/Risks/Recommendations: 4/4/6 expandable cards with correct testids",
+    "Competitors rendered as TABLE with 7 rows showing Name+Type+Directness+Value prop+Target audience",
+    "4 individual persona cards under research-personas wrapper",
+    "Sources drawer opens with 66 [N] labelled sources + official badges + clickable URLs",
+    "Copilot panel z-index=10001 > badge z-index=9999 — elementFromPoint at send button centre returns the BUTTON (overlay regression FIXED)",
+    "Copilot mouse-click send on /research produces user + assistant bubble (chat 200)"
+  ],
+  "test_report_links": [
+    "/app/test_reports/iteration_4.json"
+  ],
+  "action_items": [
+    "FIX (MEDIUM): In PersonaCard, run stripCitations() on persona_name and role_title before rendering (currently only segment/messaging_angle/list items are stripped, leaking a '[59]' marker into the personas section body).",
+    "FIX (LOW): In SwotQuadrant signature `function SwotQuadrant({ label, items, tone, icon: Icon, key })` remove the `key` destructure to silence the React warning."
+  ],
+  "critical_code_review_comments": [
+    "stripCitations() is well-placed at every text leaf in Executive Summary, SWOT, Opportunities/Risks/Recommendations, Trends, Competitors value_prop/target_audience and PersonaList items, BUT not on persona_name / role_title in PersonaCard — wrap these too to keep the body 100% citation-marker-free.",
+    "SwotQuadrant destructures `key` which is reserved by React; remove it from the destructure to clear the console warning.",
+    "Section/TOC/empty-data hiding logic in CompanyResearch.jsx sectionsPresent memo is clean: only emits a section when arr length > 0 (or text non-empty), and ResearchTOC.ITEMS.filter(sections[id]) keeps TOC and sections in sync. Seeded run has all 8 sections populated so the negative case ('hide if empty') was not exercised on real data; but the boolean wiring is correct by inspection (sectionsPresent.risks === false ⇒ Section is not mounted ⇒ TOC entry not emitted).",
+    "Copilot panel: z-index 10001 + bottom-20 cleanly resolves the iteration_4 overlay regression. Send button is now both visible and clickable; mouse-click path produced an assistant reply within 15s.",
+    "Sources drawer card formatting ([id] label + official badge + domain link) matches the spec; URLs are anchor tags with target=_blank presumably (visually rendered)."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "skipped (frontend-only iteration)",
+    "frontend": "~95% — all 13 review_request items pass; only 1 medium (persona role_title not stripped of '[59]') + 1 low (SwotQuadrant key prop warning) remain"
+  },
+  "test_credentials": "N/A — app has no user auth",
+  "seed_data_creation": "Reused seeded run 7da57a83-626e-47b2-9289-044d2e4fbd6c via localStorage.setItem('move:active_run_id', ...) and localStorage.setItem('move:copilot:collapsed','0').",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Research-page redesign + Copilot z-index fix are functionally complete and verified at 1920x1080 on seeded run 7da57a83-626e-47b2-9289-044d2e4fbd6c. Two minor fixes remain: (1) stripCitations() persona_name + role_title in ResearchVisuals.jsx PersonaCard (leak of '[59]' in personas section), (2) remove `key` from SwotQuadrant destructure. Hidden-section behaviour was not exercised on real empty data because the seeded run has all 8 sections populated; logic was code-reviewed and verified correct (sectionsPresent boolean memo + ResearchTOC ITEMS.filter). If main agent wants explicit empty-section coverage, create a fixture run with empty risks/recommendations arrays.",
+  "rca of the issue": "PersonaCard renders {p.role_title} and {p.persona_name} directly without passing through stripCitations(); the LLM occasionally returns a citation marker like '[59]' embedded in role_title for one of the personas in run 7da57a83, which then appears unstripped in the visible body. Mitigation: change lines 207-208 of ResearchVisuals.jsx to `{stripCitations(p.persona_name) || \\`Persona ${index + 1}\\`}` and `{stripCitations(p.role_title)}`."
+}
