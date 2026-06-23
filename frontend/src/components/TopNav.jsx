@@ -35,18 +35,13 @@ export default function TopNav({ variant = "app" }) {
     >
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 h-16 flex items-center gap-6">
         <Link to="/" data-testid="nav-logo" className="flex items-center gap-2 group">
-          <span
-            className="inline-flex items-center justify-center rounded-xl overflow-hidden bg-[#0B0A14] shadow-sm"
-            style={{ width: 40, height: 40 }}
-          >
-            <img
-              src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/g91qhsgm_logoMOVE.png"
-              alt=""
-              aria-hidden="true"
-              className="object-cover"
-              style={{ width: 80, height: 80, objectPosition: 'center 35%' }}
-            />
-          </span>
+          <img
+            src="https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/mhxfp8wp_ChatGPT%20Image%20Jun%2023%2C%202026%2C%2001_40_21%20PM.png"
+            alt=""
+            aria-hidden="true"
+            className="object-contain"
+            style={{ width: 36, height: 36 }}
+          />
           <span
             className="text-[17px] font-semibold tracking-tight"
             style={{
