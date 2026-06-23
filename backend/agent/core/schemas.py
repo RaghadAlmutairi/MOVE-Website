@@ -325,7 +325,7 @@ class CompetitorCandidateBlock(BaseModel):
     candidates: List[CompetitorCandidate] = Field(default_factory=list, max_length=12)
 
 
-# ============================ CONTENT AGENT (third agent) ============================
+# ============================ CONTENT AGENT – CONTENT STUDIO ============================
 class LinkedInPost(BaseModel):
     kind: Literal["THOUGHT_LEADERSHIP", "INDUSTRY_INSIGHT", "PRODUCT_AWARENESS"]
     hook: str                                         # ≤12-word scroll-stopper line
@@ -355,9 +355,10 @@ class EmailDraft(BaseModel):
 
 
 class ContentBundle(BaseModel):
-    phase: Literal["A", "B"] = "A"
+    # Content Studio produces strategy-grounded output in a single unified phase.
     positioning_line: str = ""
     messaging_pillars: List[str] = Field(default_factory=list, max_length=5)
     linkedin_posts: List[LinkedInPost] = Field(default_factory=list, max_length=3)
     blog_drafts: List[BlogDraft] = Field(default_factory=list, max_length=2)
+    seo_articles: List[BlogDraft] = Field(default_factory=list, max_length=2)
     email_drafts: List[EmailDraft] = Field(default_factory=list, max_length=3)

@@ -13,8 +13,8 @@ const FEATURES = [
   { icon: Target,         title: "Competitor Discovery",   desc: "Discovers company, product and alternative competitors with positioning, value props and product-level differentiators." },
   { icon: TrendingUp,     title: "Market & Trends",        desc: "Surfaces market trends, opportunities and risks grounded in cited sources." },
   { icon: LayoutPanelTop, title: "Strategy Agent",         desc: "Generates a full GTM strategy: foundation (positioning, ICP, beachhead), activation (pricing, motion, channels) and execution (sales playbook, demand gen, 90-day roadmap)." },
-  { icon: PenSquare,      title: "Content Agent — 2 phases", desc: "Phase A drafts LinkedIn social content from research only. Phase B adds blogs, SEO articles and email sequences once the strategy is approved." },
-  { icon: Download,       title: "Document Exports",       desc: "Generates PDF, Word and PowerPoint deliverables — plus a dedicated Strategy PDF — from the approved artefacts." },
+  { icon: PenSquare,      title: "Content Agent",          desc: "Generates the full content suite — LinkedIn posts, blog drafts, SEO articles and email sequences — grounded in the approved research and GTM strategy." },
+  { icon: Download,       title: "Document Exports",       desc: "Three PDFs and three Word docs (research, strategy, combined) plus a strategy PowerPoint — or grab everything as a single ZIP kit." },
 ];
 
 const STEPS = [
@@ -26,9 +26,9 @@ const STEPS = [
 ];
 
 const FAQ = [
-  { q: "What does MOVE actually do?", a: "MOVE drives the gtm_v4_fixed multi-agent system: a research agent (LangGraph) produces a structured Report; a strategy agent produces a full GTM Strategy; a content agent produces a Phase A draft (LinkedIn) and a Phase B full suite (blogs, SEO, emails). Every artefact is rooted in cited sources." },
-  { q: "Why does it ask me to approve each stage?", a: "The agent system enforces a human-in-the-loop gate after research, strategy and each content phase. MOVE surfaces those gates as Approve / Regenerate buttons — they are real backend transitions, not UI decoration." },
-  { q: "What can I download?", a: "Once a stage is approved, MOVE can export PDF, Word or PowerPoint of the combined report, and a dedicated Strategy PDF. Each export is generated server-side by the agent's exporters." },
+  { q: "What does MOVE actually do?", a: "MOVE drives a sequential multi-agent system: research → strategy → content. Every artefact is grounded in cited sources, and each stage waits for your approval before the next one runs." },
+  { q: "Why does it ask me to approve each stage?", a: "The agent system enforces a human-in-the-loop gate after research, strategy and content. MOVE surfaces those gates as Approve / Regenerate buttons — they are real backend transitions, not UI decoration." },
+  { q: "What can I download?", a: "Three PDFs and three Word docs (research only, strategy only, combined research + strategy), a strategy PowerPoint deck, or the entire kit as a single ZIP. Every file is generated server-side by the agent's exporters." },
 ];
 
 export default function Landing() {

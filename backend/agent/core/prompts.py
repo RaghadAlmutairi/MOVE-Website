@@ -533,24 +533,25 @@ Each post MUST be a complete, publish-ready post with full prose.
 ═══════════════════════════════════════════════════════════
 """
 
-CONTENT_PHASE_A_PROMPT = _CONTENT_PERSONA + _CONTENT_DEPTH_RULES + """
-Using ONLY the market research brief, produce a complete, publish-ready content
-set: three LinkedIn posts (THOUGHT_LEADERSHIP, INDUSTRY_INSIGHT, PRODUCT_AWARENESS),
-two fully written blog articles (SEO, EDUCATIONAL) and three full-length emails
-(OUTBOUND, NURTURE, LAUNCH), plus a one-line positioning and messaging pillars.
+CONTENT_STUDIO_PROMPT = _CONTENT_PERSONA + _CONTENT_DEPTH_RULES + """
+The GO-TO-MARKET STRATEGY is finalized. Using BOTH the market research brief AND
+the GTM strategy, produce a complete, publish-ready content set that is fully
+strategy-aligned from the start:
 
-Ground every angle in the research (personas, pain points, trends, differentiators).
-Every asset must meet the DEPTH & LENGTH REQUIREMENTS above.
-This is PHASE A (research-only) — set phase="A".
-""" + _CONTENT_GUARDRAILS + "\nReturn ONLY the schema."
+  • THREE LinkedIn posts : THOUGHT_LEADERSHIP, INDUSTRY_INSIGHT, PRODUCT_AWARENESS
+  • TWO blog articles (blog_drafts) : EDUCATIONAL content for general audience
+  • TWO SEO articles (seo_articles) : SEO-optimized with keywords, meta descriptions
+  • THREE full-length emails : OUTBOUND, NURTURE, LAUNCH
+  • A one-line positioning statement and messaging pillars
 
-CONTENT_PHASE_B_PROMPT = _CONTENT_PERSONA + _CONTENT_DEPTH_RULES + """
-The GO-TO-MARKET STRATEGY is now finalized. REWRITE and UPGRADE every asset to
-align with the strategy's positioning_statement, value_pillars, competitive_wedge,
-target segments, channels and the selected GTM motion.
+IMPORTANT:
+- blog_drafts: Educational articles without heavy SEO optimization
+- seo_articles: SEO-focused articles with target_keyword, secondary_keywords, and meta_description
 
-Keep the same asset types (3 LinkedIn, 2 blogs, 3 emails). Sharpen hooks and CTAs
-to the strategy's messaging. Do NOT merely tweak — fully rewrite for max impact.
-Every asset must meet the DEPTH & LENGTH REQUIREMENTS above.
-This is PHASE B (research + strategy) — set phase="B".
+Ground every asset in the research (personas, pain points, trends, differentiators)
+AND align it to the strategy's positioning_statement, competitive_wedge, target
+segments, channels, and GTM motion.
+
+Hooks and CTAs must reflect the strategy's messaging. Every asset must meet the
+DEPTH & LENGTH REQUIREMENTS above.
 """ + _CONTENT_GUARDRAILS + "\nReturn ONLY the schema."

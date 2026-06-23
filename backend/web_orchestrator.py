@@ -1,54 +1,55 @@
 """
 web_orchestrator.py
 
-A thin, NON-INTERACTIVE orchestration layer that mirrors the order, parallelism
-and gates of `agents/orchestrator.run_pipeline`, but exposes each
-human-in-the-loop gate as an HTTP endpoint instead of a CLI `input()` prompt.
+Non-interactive orchestration layer that mirrors the new sequential
+agent flow (Research -> Strategy -> Content) and exposes each
+human-in-the-loop gate as an HTTP endpoint instead of a CLI input().
 
-Agent code is NEVER modified.  This module only:
-  • imports the agent's public functions (run_research, generate_gtm_strategy,
-    generate_content_phase_a, generate_content_phase_b, exporters)
-  • drives them in the documented order
-  • persists state in MongoDB so the React UI can resume between approvals
+Agent code is NEVER modified. This module:
+  * imports the agent's public functions
+  * drives them in the documented order
+  * persists state in MongoDB so the React UI can resume between approvals
+  * builds scoped PDF/DOCX/PPTX/ZIP exports for the UI
 
-Stage flow (identical to agents/orchestrator.py)
-================================================
-  step1_research    : pipeline.research_graph.run_research(query, url)
-       │
-       │  approve_research()  or  regenerate_research()
-       ▼
-  step2_parallel    : ThreadPoolExecutor → _run_strategy + _run_content_phase_a
-       │
-       │  approve_strategy()  or  regenerate_strategy()
-       │  approve_phase_a()   or  regenerate_phase_a()
-       ▼
-  step3_phase_b     : _run_content_phase_b(channels=…)
-       │
-       │  approve_phase_b()   or  regenerate_phase_b()
-       ▼
-  step4_export      : exporters (PDF / DOCX / PPTX / strategy_pdf)
+Stage flow
+==========
+  research            (background)
+     |  approve_research / regenerate_research
+     v
+  strategy            (background; auto-started on approve_research)
+     |  approve_strategy / regenerate_strategy
+     v
+  content             (background; auto-started on approve_strategy)
+     |  approve_content / regenerate_content
+     v
+  complete
 
-Every state transition writes the merged `result` dict back to Mongo so that
-the React client can recover the full graph after a refresh.
+Exports (no LLM, all sync):
+  pdf   scope = research | strategy | combined
+  docx  scope = research | strategy | combined
+  pptx                                               (strategy deck)
+  zip                                                (all available files)
 """
 
 from __future__ import annotations
 
+import io
 import logging
 import os
+import re
 import sys
 import threading
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-# ---- Make the agent imports work (it uses bare imports: `from core...`) ----
+# Make the agent imports work (it uses bare imports: `from core...`).
 AGENT_DIR = Path(__file__).parent / "agent"
 sys.path.insert(0, str(AGENT_DIR))
 
-# Run all per-run files under backend/runs/{run_id}/ — never inside the agent dir.
+# Per-run files live under backend/runs/{run_id}/ -- never inside the agent dir.
 RUNS_DIR = Path(__file__).parent / "runs"
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -56,7 +57,7 @@ logger = logging.getLogger("move.orchestrator")
 
 
 # ---------------------------------------------------------------------------
-# Mongo helpers (sync — pipeline runs in worker threads)
+# Mongo helpers (sync; pipeline runs in worker threads)
 # ---------------------------------------------------------------------------
 from pymongo import MongoClient
 
@@ -87,69 +88,45 @@ def _get(run_id: str) -> Optional[Dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Stage runners (mirror agents/orchestrator.py exactly, minus input() prompts)
+# Helpers
 # ---------------------------------------------------------------------------
 
-def _run_strategy_stage(run_id: str, result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Calls the agent's strategy stage runner (orchestrator._run_strategy)."""
-    from agents.orchestrator import _run_strategy as agent_run_strategy
-    _push_event(run_id, "strategy", "running")
-    gtm = agent_run_strategy(result)
-    _push_event(run_id, "strategy", "done" if gtm else "failed")
-    return gtm
+def _redact(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Trim very large embedded raw text from sources before storing in Mongo."""
+    out = dict(result)
+    if "sources" in out:
+        out["sources"] = [
+            {k: v for k, v in s.items() if k != "raw"} for s in out["sources"]
+        ]
+    return out
 
 
-def _run_phase_a_stage(run_id: str, result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Calls the agent's content Phase A runner (orchestrator._run_content_phase_a)."""
-    from agents.orchestrator import _run_content_phase_a as agent_run_phase_a
-    _push_event(run_id, "content_phase_a", "running")
-    bundle = agent_run_phase_a(result)
-    _push_event(run_id, "content_phase_a", "done" if bundle else "failed")
-    return bundle
-
-
-def _run_phase_b_stage(run_id: str, result: Dict[str, Any],
-                       gtm: Dict[str, Any], phase_a: Dict[str, Any],
-                       channels: List[str]) -> Optional[Dict[str, Any]]:
-    """Calls the agent's content Phase B runner (orchestrator._run_content_phase_b)."""
-    from agents.orchestrator import _run_content_phase_b as agent_run_phase_b
-    _push_event(run_id, "content_phase_b", "running")
-    bundle = agent_run_phase_b(result, gtm, phase_a, channels)
-    _push_event(run_id, "content_phase_b", "done" if bundle else "failed")
-    return bundle
+def _scoped_result(doc: Dict[str, Any], scope: str) -> Dict[str, Any]:
+    """Return a copy of result restricted to the requested scope."""
+    result = dict(doc.get("result") or {})
+    if "report" not in result:
+        raise ValueError("Run has no research report")
+    if scope == "research":
+        result.pop("gtm_strategy", None)
+        result.pop("content", None)
+    elif scope == "strategy":
+        # Strategy-only: keep gtm_strategy plus minimal report context for headers.
+        # The strategy PDF/DOCX exporters reference report fields, so keep it.
+        result.pop("content", None)
+    elif scope == "combined":
+        # research + strategy (no content per spec)
+        result.pop("content", None)
+    else:
+        raise ValueError(f"Unknown scope: {scope}")
+    return result
 
 
 # ---------------------------------------------------------------------------
-# Public API: kick off a run
+# Stage runners
 # ---------------------------------------------------------------------------
 
-def create_run(query: str, url: str = "") -> str:
-    """Create a new run document and start research in the background."""
-    run_id = str(uuid.uuid4())
-    runs.insert_one({
-        "id": run_id,
-        "query": query,
-        "url": url,
-        "status": "running",
-        "stage": "research",
-        "created_at": _now(),
-        "updated_at": _now(),
-        "events": [{"stage": "research", "status": "running", "ts": _now()}],
-        "exports": [],
-    })
-
-    thread = threading.Thread(
-        target=_background_research,
-        args=(run_id, query, url),
-        daemon=True,
-        name=f"research-{run_id[:8]}",
-    )
-    thread.start()
-    return run_id
-
-
-def _background_research(run_id: str, query: str, url: str) -> None:
-    """Run only the research stage; await human approval before continuing."""
+def _run_research(run_id: str, query: str, url: str) -> None:
+    """Run research only; await human approval before continuing."""
     try:
         from pipeline.research_graph import run_research
         result = run_research(query, url=url)
@@ -183,30 +160,114 @@ def _background_research(run_id: str, query: str, url: str) -> None:
         _push_event(run_id, "research", "failed", error=str(e))
 
 
+def _run_strategy(run_id: str) -> None:
+    """Run strategy stage on the current result."""
+    try:
+        from agents.orchestrator import _run_strategy as agent_run_strategy
+        doc = _get(run_id)
+        if not doc or "result" not in doc:
+            _update(run_id, status="failed", stage="strategy", error="No research result")
+            return
+        result = dict(doc["result"])
+        _push_event(run_id, "strategy", "running")
+        gtm = agent_run_strategy(result)
+        if not gtm:
+            _update(run_id, status="failed", stage="strategy",
+                    error="Strategy generation produced no output")
+            _push_event(run_id, "strategy", "failed")
+            return
+        result["gtm_strategy"] = gtm
+        _update(run_id,
+                status="awaiting_strategy_approval",
+                stage="strategy",
+                result=_redact(result))
+        _push_event(run_id, "strategy", "done")
+    except Exception as e:  # noqa: BLE001
+        logger.exception("[run %s] strategy error", run_id)
+        _update(run_id, status="failed", stage="strategy", error=str(e))
+        _push_event(run_id, "strategy", "failed", error=str(e))
+
+
+def _run_content(run_id: str) -> None:
+    """Run unified Content Studio (all channels) on the current result."""
+    try:
+        from agents.orchestrator import _run_content_studio as agent_run_content
+        doc = _get(run_id)
+        if not doc or "result" not in doc:
+            _update(run_id, status="failed", stage="content", error="No prior result")
+            return
+        result = dict(doc["result"])
+        gtm = result.get("gtm_strategy")
+        if not gtm:
+            _update(run_id, status="failed", stage="content",
+                    error="Approved strategy required before content")
+            return
+        _push_event(run_id, "content", "running")
+        channels = ["linkedin", "blog", "seo", "email"]
+        bundle = agent_run_content(result, gtm, channels)
+        if not bundle:
+            _update(run_id, status="failed", stage="content",
+                    error="Content generation produced no output")
+            _push_event(run_id, "content", "failed")
+            return
+        result["content"] = bundle
+        _update(run_id,
+                status="awaiting_content_approval",
+                stage="content",
+                result=_redact(result))
+        _push_event(run_id, "content", "done")
+    except Exception as e:  # noqa: BLE001
+        logger.exception("[run %s] content error", run_id)
+        _update(run_id, status="failed", stage="content", error=str(e))
+        _push_event(run_id, "content", "failed", error=str(e))
+
+
 # ---------------------------------------------------------------------------
-# HITL gate: research approval / regeneration
+# Public API: kick off a run
 # ---------------------------------------------------------------------------
 
-def approve_research(run_id: str, run_strategy: bool, run_content: bool) -> None:
-    """Mirrors orchestrator.run_pipeline STEP 2 entry: launch strategy and/or Phase A."""
+def create_run(query: str, url: str = "") -> str:
+    """Create a new run document and start research in the background."""
+    run_id = str(uuid.uuid4())
+    runs.insert_one({
+        "id": run_id,
+        "query": query,
+        "url": url,
+        "status": "running",
+        "stage": "research",
+        "created_at": _now(),
+        "updated_at": _now(),
+        "events": [{"stage": "research", "status": "running", "ts": _now()}],
+        "exports": [],
+    })
+
+    threading.Thread(
+        target=_run_research,
+        args=(run_id, query, url),
+        daemon=True,
+        name=f"research-{run_id[:8]}",
+    ).start()
+    return run_id
+
+
+# ---------------------------------------------------------------------------
+# HITL gates
+# ---------------------------------------------------------------------------
+
+def approve_research(run_id: str) -> None:
+    """Approve research and auto-launch strategy."""
     doc = _get(run_id)
-    if not doc or doc.get("status") != "awaiting_research_approval":
-        raise ValueError("Run is not awaiting research approval")
-    result = doc["result"]
+    if not doc:
+        raise ValueError("Run not found")
+    if doc.get("status") != "awaiting_research_approval":
+        raise ValueError(f"Run not awaiting research approval (status={doc.get('status')})")
     _update(run_id,
             status="running",
-            stage="parallel",
-            run_strategy=run_strategy,
-            run_content=run_content,
+            stage="strategy",
             approved_research=True)
-
-    thread = threading.Thread(
-        target=_background_parallel,
-        args=(run_id, result, run_strategy, run_content),
-        daemon=True,
-        name=f"parallel-{run_id[:8]}",
-    )
-    thread.start()
+    _push_event(run_id, "research", "approved")
+    threading.Thread(target=_run_strategy, args=(run_id,), daemon=True,
+                     name=f"strategy-{run_id[:8]}").start()
 
 
 def regenerate_research(run_id: str) -> None:
@@ -215,232 +276,215 @@ def regenerate_research(run_id: str) -> None:
         raise ValueError("Run not found")
     _update(run_id, status="running", stage="research")
     _push_event(run_id, "research", "running", regenerate=True)
-    thread = threading.Thread(
-        target=_background_research,
+    threading.Thread(
+        target=_run_research,
         args=(run_id, doc["query"], doc.get("url", "")),
         daemon=True,
-        name=f"regen-{run_id[:8]}",
-    )
-    thread.start()
-
-
-def _background_parallel(run_id: str, result: Dict[str, Any],
-                         run_strategy: bool, run_content: bool) -> None:
-    """Run strategy + Phase A in parallel, mirroring agents/orchestrator.py STEP 2."""
-    try:
-        gtm = None
-        phase_a = None
-        with ThreadPoolExecutor(max_workers=2) as ex:
-            futs = {}
-            if run_strategy:
-                futs["strategy"] = ex.submit(_run_strategy_stage, run_id, result)
-            if run_content:
-                futs["phase_a"] = ex.submit(_run_phase_a_stage, run_id, result)
-            if "strategy" in futs:
-                gtm = futs["strategy"].result()
-            if "phase_a" in futs:
-                phase_a = futs["phase_a"].result()
-
-        if gtm:
-            result["gtm_strategy"] = gtm
-        if phase_a:
-            result["content_phase_a"] = phase_a
-
-        # Determine next status — wait for whichever approvals are still due.
-        next_status = "awaiting_strategy_approval" if gtm and not phase_a \
-            else "awaiting_phase_a_approval" if phase_a and not gtm \
-            else "awaiting_strategy_and_phase_a_approval" if (gtm and phase_a) \
-            else "complete"
-
-        _update(run_id, status=next_status, stage="parallel", result=_redact(result))
-        if next_status == "complete":
-            _push_event(run_id, "pipeline", "complete")
-    except Exception as e:  # noqa: BLE001
-        logger.exception("[run %s] parallel error", run_id)
-        _update(run_id, status="failed", stage="parallel", error=str(e))
-
-
-# ---------------------------------------------------------------------------
-# HITL gate: strategy + Phase A approval / regeneration
-# ---------------------------------------------------------------------------
-
-def _advance_after(run_id: str, doc: Dict[str, Any]) -> None:
-    """Advance the run's status based on which approvals are still outstanding."""
-    waiting_strategy = doc.get("status") in ("awaiting_strategy_approval", "awaiting_strategy_and_phase_a_approval")
-    waiting_phase_a  = doc.get("status") in ("awaiting_phase_a_approval", "awaiting_strategy_and_phase_a_approval")
-    if doc.get("approved_strategy") and waiting_strategy:
-        waiting_strategy = False
-    if doc.get("approved_phase_a") and waiting_phase_a:
-        waiting_phase_a = False
-
-    if waiting_strategy and waiting_phase_a:
-        next_status = "awaiting_strategy_and_phase_a_approval"
-    elif waiting_strategy:
-        next_status = "awaiting_strategy_approval"
-    elif waiting_phase_a:
-        next_status = "awaiting_phase_a_approval"
-    else:
-        next_status = "ready_for_phase_b"
-    _update(run_id, status=next_status)
+        name=f"regen-research-{run_id[:8]}",
+    ).start()
 
 
 def approve_strategy(run_id: str) -> None:
+    """Approve strategy and auto-launch content generation."""
     doc = _get(run_id)
     if not doc:
         raise ValueError("Run not found")
-    _update(run_id, approved_strategy=True)
+    if doc.get("status") != "awaiting_strategy_approval":
+        raise ValueError(f"Run not awaiting strategy approval (status={doc.get('status')})")
+    _update(run_id,
+            status="running",
+            stage="content",
+            approved_strategy=True)
     _push_event(run_id, "strategy", "approved")
-    _advance_after(run_id, _get(run_id))
+    threading.Thread(target=_run_content, args=(run_id,), daemon=True,
+                     name=f"content-{run_id[:8]}").start()
 
 
 def regenerate_strategy(run_id: str) -> None:
     doc = _get(run_id)
-    if not doc or "result" not in doc:
-        raise ValueError("Run not found or missing result")
-    _push_event(run_id, "strategy", "regenerating")
-
-    def _job():
-        result = doc["result"]
-        gtm = _run_strategy_stage(run_id, result)
-        if gtm:
-            result["gtm_strategy"] = gtm
-            _update(run_id, result=_redact(result))
-
-    threading.Thread(target=_job, daemon=True).start()
+    if not doc:
+        raise ValueError("Run not found")
+    _update(run_id, status="running", stage="strategy")
+    _push_event(run_id, "strategy", "running", regenerate=True)
+    threading.Thread(target=_run_strategy, args=(run_id,), daemon=True,
+                     name=f"regen-strategy-{run_id[:8]}").start()
 
 
-def approve_phase_a(run_id: str) -> None:
+def approve_content(run_id: str) -> None:
     doc = _get(run_id)
     if not doc:
         raise ValueError("Run not found")
-    _update(run_id, approved_phase_a=True)
-    _push_event(run_id, "content_phase_a", "approved")
-    _advance_after(run_id, _get(run_id))
-
-
-def regenerate_phase_a(run_id: str) -> None:
-    doc = _get(run_id)
-    if not doc or "result" not in doc:
-        raise ValueError("Run not found or missing result")
-    _push_event(run_id, "content_phase_a", "regenerating")
-
-    def _job():
-        result = doc["result"]
-        bundle = _run_phase_a_stage(run_id, result)
-        if bundle:
-            result["content_phase_a"] = bundle
-            _update(run_id, result=_redact(result))
-
-    threading.Thread(target=_job, daemon=True).start()
-
-
-# ---------------------------------------------------------------------------
-# HITL gate: Phase B
-# ---------------------------------------------------------------------------
-
-VALID_CHANNELS = {"linkedin", "blog", "seo", "email"}
-
-
-def start_phase_b(run_id: str, channels: List[str]) -> None:
-    doc = _get(run_id)
-    if not doc:
-        raise ValueError("Run not found")
-    if doc.get("status") not in ("ready_for_phase_b", "awaiting_phase_b_approval", "complete"):
-        raise ValueError(f"Run not ready for Phase B (status={doc.get('status')})")
-    result = doc["result"]
-    gtm = result.get("gtm_strategy")
-    phase_a = result.get("content_phase_a")
-    if not gtm or not phase_a:
-        raise ValueError("Phase B requires approved strategy AND approved Phase A")
-
-    channels = [c.lower() for c in channels if c.lower() in VALID_CHANNELS]
-    _update(run_id, status="running", stage="content_phase_b", phase_b_channels=channels)
-
-    def _job():
-        try:
-            bundle = _run_phase_b_stage(run_id, result, gtm, phase_a, channels)
-            if bundle:
-                result["content"] = bundle
-            _update(run_id,
-                    status="awaiting_phase_b_approval" if bundle else "complete",
-                    result=_redact(result))
-        except Exception as e:  # noqa: BLE001
-            logger.exception("[run %s] phase B error", run_id)
-            _update(run_id, status="failed", stage="content_phase_b", error=str(e))
-
-    threading.Thread(target=_job, daemon=True).start()
-
-
-def approve_phase_b(run_id: str) -> None:
-    _update(run_id, approved_phase_b=True, status="complete")
-    _push_event(run_id, "content_phase_b", "approved")
+    _update(run_id,
+            status="complete",
+            stage="content",
+            approved_content=True)
+    _push_event(run_id, "content", "approved")
     _push_event(run_id, "pipeline", "complete")
 
 
-def regenerate_phase_b(run_id: str) -> None:
+def regenerate_content(run_id: str) -> None:
     doc = _get(run_id)
     if not doc:
         raise ValueError("Run not found")
-    start_phase_b(run_id, doc.get("phase_b_channels") or [])
+    _update(run_id, status="running", stage="content")
+    _push_event(run_id, "content", "running", regenerate=True)
+    threading.Thread(target=_run_content, args=(run_id,), daemon=True,
+                     name=f"regen-content-{run_id[:8]}").start()
 
 
 # ---------------------------------------------------------------------------
-# Exports (calls agent exporters; writes to runs/{run_id}/{filename})
+# Exports
 # ---------------------------------------------------------------------------
 
-ALLOWED_FORMATS = {"pdf", "word", "pptx", "strategy_pdf"}
+ALLOWED_FORMATS = {"pdf", "docx", "pptx", "zip"}
+ALLOWED_SCOPES  = {"research", "strategy", "combined"}
 
 
-def export(run_id: str, fmt: str) -> Dict[str, str]:
-    """Export the run's current result in the requested format.
+def _safe_entity(doc: Dict[str, Any]) -> str:
+    result = doc.get("result") or {}
+    plan = result.get("plan") or {}
+    title = (result.get("report") or {}).get("title") or ""
+    raw = plan.get("subject_entity") or title or doc.get("query") or "report"
+    return re.sub(r"[^a-z0-9]+", "_", raw.lower())[:30] or "report"
 
-    Returns {"filename": "...", "path": "..."} on success.
-    """
+
+def _filename(scope: Optional[str], fmt: str, entity: str) -> str:
+    if fmt == "pptx":
+        return f"strategy_deck_{entity}.pptx"
+    if fmt == "zip":
+        return f"move_kit_{entity}.zip"
+    label = {
+        "research": "research_report",
+        "strategy": "gtm_strategy",
+        "combined": "research_plus_strategy",
+    }[scope]
+    return f"{label}_{entity}.{fmt}"
+
+
+def _emit_pdf(doc: Dict[str, Any], scope: str, out_path: Path) -> Path:
+    from export.export_pdf import Market_report_analysis
+    from export.export_strategy import export_strategy_pdf
+    if scope == "strategy":
+        result = _scoped_result(doc, "strategy")
+        if not result.get("gtm_strategy"):
+            raise ValueError("Strategy not yet generated")
+        p = export_strategy_pdf(result, path=str(out_path))
+    else:
+        result = _scoped_result(doc, scope)
+        p = Market_report_analysis(result, path=str(out_path))
+    if not p or not Path(p).exists():
+        raise RuntimeError(f"PDF export failed for scope={scope}")
+    return Path(p)
+
+
+def _emit_docx(doc: Dict[str, Any], scope: str, out_path: Path) -> Path:
+    from export.export_docx import export_docx
+    result = _scoped_result(doc, scope)
+    if scope == "strategy" and not result.get("gtm_strategy"):
+        raise ValueError("Strategy not yet generated")
+    p = export_docx(result, path=str(out_path))
+    if not p or not Path(p).exists():
+        raise RuntimeError(f"DOCX export failed for scope={scope}")
+    return Path(p)
+
+
+def _emit_pptx(doc: Dict[str, Any], out_path: Path) -> Path:
+    from export.export_pptx import export_pptx
+    result = doc.get("result") or {}
+    if not result.get("gtm_strategy"):
+        raise ValueError("Strategy not yet generated")
+    p = export_pptx(result, path=str(out_path))
+    if not p or not Path(p).exists():
+        raise RuntimeError("PPTX export failed")
+    return Path(p)
+
+
+def _record_export(run_id: str, fmt: str, scope: Optional[str], path: Path) -> Dict[str, Any]:
+    rec = {
+        "format": fmt,
+        "scope": scope,
+        "filename": path.name,
+        "path": str(path),
+        "size": path.stat().st_size,
+    }
+    runs.update_one({"id": run_id},
+                    {"$push": {"exports": rec}, "$set": {"updated_at": _now()}})
+    _push_event(run_id, "export", "done", fmt=fmt, scope=scope, filename=path.name)
+    return rec
+
+
+def export(run_id: str, fmt: str, scope: Optional[str] = None) -> Dict[str, Any]:
+    """Export a single artifact. Returns the record stored on the run."""
     if fmt not in ALLOWED_FORMATS:
         raise ValueError(f"Unsupported format: {fmt}")
     doc = _get(run_id)
     if not doc or "result" not in doc:
         raise ValueError("Run not found or has no usable result")
-    result = doc["result"]
 
     out_dir = RUNS_DIR / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
-    filename = {
-        "pdf":          "report.pdf",
-        "word":         "report.docx",
-        "pptx":         "presentation.pptx",
-        "strategy_pdf": "gtm_strategy.pdf",
-    }[fmt]
-    out_path = out_dir / filename
+    entity = _safe_entity(doc)
 
-    if fmt == "strategy_pdf":
-        from export.export_strategy import export_strategy_pdf
-        p = export_strategy_pdf(result, path=str(out_path))
-    else:
-        from export.export import market_report_analysis_tool
-        fn = market_report_analysis_tool
-        invoker = fn.invoke if hasattr(fn, "invoke") else fn
-        out = invoker({"result": result, "fmt": fmt, "path": str(out_path)}) \
-            if hasattr(fn, "invoke") else fn(result=result, fmt=fmt, path=str(out_path))
-        p = out.get("path")
-    if not p or not Path(p).exists():
-        raise RuntimeError(f"Export library unavailable or failed for fmt={fmt}")
+    if fmt == "zip":
+        return export_zip(run_id)
 
-    rec = {"format": fmt, "filename": filename, "path": str(p), "size": Path(p).stat().st_size}
-    runs.update_one({"id": run_id}, {"$push": {"exports": rec}, "$set": {"updated_at": _now()}})
-    _push_event(run_id, "export", "done", fmt=fmt, filename=filename)
-    return rec
+    if fmt in {"pdf", "docx"}:
+        if scope not in ALLOWED_SCOPES:
+            raise ValueError(f"scope must be one of {sorted(ALLOWED_SCOPES)} for {fmt}")
+        out_path = out_dir / _filename(scope, fmt, entity)
+        path = _emit_pdf(doc, scope, out_path) if fmt == "pdf" \
+            else _emit_docx(doc, scope, out_path)
+        return _record_export(run_id, fmt, scope, path)
+
+    # pptx (strategy deck)
+    out_path = out_dir / _filename(None, "pptx", entity)
+    path = _emit_pptx(doc, out_path)
+    return _record_export(run_id, "pptx", None, path)
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+def export_zip(run_id: str) -> Dict[str, Any]:
+    """Generate every available export and bundle them into a single ZIP."""
+    doc = _get(run_id)
+    if not doc or "result" not in doc:
+        raise ValueError("Run not found or has no usable result")
+    result = doc.get("result") or {}
 
-def _redact(result: Dict[str, Any]) -> Dict[str, Any]:
-    """Trim very large embedded raw text from sources before storing in Mongo."""
-    out = dict(result)
-    if "sources" in out:
-        out["sources"] = [
-            {k: v for k, v in s.items() if k != "raw"} for s in out["sources"]
-        ]
-    return out
+    out_dir = RUNS_DIR / run_id
+    out_dir.mkdir(parents=True, exist_ok=True)
+    entity = _safe_entity(doc)
+
+    # Generate every artifact that's currently feasible.
+    artifacts: List[Path] = []
+    pdf_dir = out_dir / "pdf"
+    docx_dir = out_dir / "docx"
+    pptx_dir = out_dir / "pptx"
+    pdf_dir.mkdir(exist_ok=True)
+    docx_dir.mkdir(exist_ok=True)
+    pptx_dir.mkdir(exist_ok=True)
+
+    has_strategy = bool(result.get("gtm_strategy"))
+
+    # PDFs
+    artifacts.append(_emit_pdf(doc, "research", pdf_dir / _filename("research", "pdf", entity)))
+    if has_strategy:
+        artifacts.append(_emit_pdf(doc, "strategy", pdf_dir / _filename("strategy", "pdf", entity)))
+        artifacts.append(_emit_pdf(doc, "combined", pdf_dir / _filename("combined", "pdf", entity)))
+
+    # DOCX
+    artifacts.append(_emit_docx(doc, "research", docx_dir / _filename("research", "docx", entity)))
+    if has_strategy:
+        artifacts.append(_emit_docx(doc, "strategy", docx_dir / _filename("strategy", "docx", entity)))
+        artifacts.append(_emit_docx(doc, "combined", docx_dir / _filename("combined", "docx", entity)))
+
+    # PPTX (strategy deck)
+    if has_strategy:
+        artifacts.append(_emit_pptx(doc, pptx_dir / _filename(None, "pptx", entity)))
+
+    zip_name = _filename(None, "zip", entity)
+    zip_path = out_dir / zip_name
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for p in artifacts:
+            # arc structure: pdf/foo.pdf etc.
+            zf.write(p, arcname=str(p.relative_to(out_dir)))
+
+    return _record_export(run_id, "zip", None, zip_path)

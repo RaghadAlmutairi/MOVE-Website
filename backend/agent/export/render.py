@@ -240,7 +240,7 @@ def _gtm_md(g):
 
 def _content_md(c):
     """Render the content bundle as markdown."""
-    o = [f"## Marketing Content (Phase {c.get('phase','A')})", ""]
+    o = ["## Marketing Content", ""]
     if c.get("positioning_line"):
         o.append(f"**Positioning:** {c['positioning_line']}")
     if c.get("messaging_pillars"):
@@ -276,15 +276,7 @@ def _content_md(c):
         o.append("### Blog Articles")
         o.append("")
         for b in c["blog_drafts"]:
-            kind_label = b.get('kind', 'BLOG').title()
-            o.append(f"#### {kind_label}: {b.get('title', '')}")
-            o.append("")
-            if b.get("target_keyword"):
-                o.append(f"**Primary keyword:** `{b['target_keyword']}`")
-            if b.get("secondary_keywords"):
-                o.append(f"**Secondary keywords:** {', '.join(b['secondary_keywords'])}")
-            if b.get("meta_description"):
-                o.append(f"**Meta description:** _{b['meta_description']}_")
+            o.append(f"#### {b.get('title', '')}")
             o.append("")
             if b.get("outline"):
                 o.append("**Outline:**")
@@ -295,6 +287,33 @@ def _content_md(c):
             o.append("")
             if b.get("cta"):
                 o.append(f"**→ {b['cta']}**")
+            o.append("")
+            o.append("---")
+            o.append("")
+
+    # ── SEO Articles ──────────────────────────────────────────────────────────
+    if c.get("seo_articles"):
+        o.append("### SEO Articles")
+        o.append("")
+        for s in c["seo_articles"]:
+            o.append(f"#### {s.get('title', '')}")
+            o.append("")
+            if s.get("target_keyword"):
+                o.append(f"**Primary keyword:** `{s['target_keyword']}`")
+            if s.get("secondary_keywords"):
+                o.append(f"**Secondary keywords:** {', '.join(s['secondary_keywords'])}")
+            if s.get("meta_description"):
+                o.append(f"**Meta description:** _{s['meta_description']}_")
+            o.append("")
+            if s.get("outline"):
+                o.append("**Outline:**")
+                for idx, heading in enumerate(s["outline"], 1):
+                    o.append(f"{idx}. {heading}")
+            o.append("")
+            o.append(s.get("body", ""))
+            o.append("")
+            if s.get("cta"):
+                o.append(f"**→ {s['cta']}**")
             o.append("")
             o.append("---")
             o.append("")
@@ -343,7 +362,7 @@ def render_md(result: Dict[str, Any]) -> str:
     out.append(r["executive_summary"])
     out.append("")
     if r.get("_evidence_limitation"):
-        out.append(f"> \u26a0 **{r['_evidence_limitation']}**")
+        out.append(f"> [!] **{r['_evidence_limitation']}**")
         out.append("")
 
     sw = r["subject_swot"]

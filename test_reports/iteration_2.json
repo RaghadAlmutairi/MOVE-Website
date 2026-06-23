@@ -1,0 +1,46 @@
+{
+  "summary": "Iteration 2 — tested the sequential refactor (Research→Strategy→Content; phase_a/phase_b removed). Backend pytest suite was rewritten for the new contract: 25/25 passed (health=gtm_sequential, deprecated endpoints 404/405, create-run starts at research, all 3 PDF scopes + 3 DOCX scopes + PPTX deck + ZIP exports produce the spec'd filenames and sizes, ZIP archive contains pdf/ docx/ pptx/ subdirs, file download works for root + subdir files, bad format/scope return 4xx, strategy export pre-strategy returns 400, chat works for research/strategy/content scopes, negative cases pass). Used existing seeded complete run 7da57a83 (has report+gtm_strategy+content) to avoid a 5-min pipeline run. Frontend: landing hero/MOVE logo render; /studio empty state OK; /studio with seeded run renders the GTM-kit ZIP banner, all 3 tabs, all 8 export testids (export-pdf-research/strategy/combined, export-docx-research/strategy/combined, export-pptx, export-zip), and an export click produced the correct toast ('research_report_openai.pdf ready'). HOWEVER, the 'Ask the agent' tab crashes with an Uncaught TypeError because ChatPanel was not updated for the new scope='content' — see Action Items.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/runs/{id}/export", "issue": "Bad format/scope returns 422 (Pydantic Literal) rather than 400. Spec says 400. Either is acceptable but if strict 400 is desired wrap with custom validator."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ChatPanel.jsx", "issue": "Uncaught TypeError: Cannot read properties of undefined (reading 'map') when ContentStudio's 'Ask the agent' tab mounts <ChatPanel scope=\"content\" />. Root cause: QUICK and TITLE dicts in /app/frontend/src/components/ChatPanel.jsx only define keys 'research' and 'strategy'; 'content' is missing, so `QUICK[scope].map(...)` on line 91 crashes. Effect: the entire chat tab does not render — no chat-panel-content/chat-input-content/chat-send-content elements exist in the DOM, and a CRA error overlay covers the page. Fix: add `content: [...]` to QUICK and `content: 'Ask about the content'` to TITLE (or guard with `(QUICK[scope] || []).map`). Intro message also hard-codes research/strategy only.", "selector": "[data-testid='tab-chat'] -> [data-testid='chat-panel-content']", "priority": "HIGH"},
+      {"component": "ContentStudio.jsx", "issue": "approve-content / regenerate-content buttons only render when run.status === 'awaiting_content_approval'. The seeded run is already 'complete', so these testids cannot be observed in a completed state. This is the correct intent — flagging for awareness; main agent may want a smoke run reaching awaiting_content_approval to verify these visually.", "selector": "[data-testid='approve-content']", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Ask the agent (scope=content) chat send", "issue": "Cannot be exercised end-to-end on /studio because the panel crashes before mount. Backend /api/runs/{id}/chat with scope='content' works (verified in pytest), so this is purely a frontend regression.", "affected_selectors": ["[data-testid='chat-input-content']", "[data-testid='chat-send-content']"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "FIX (HIGH): /app/frontend/src/components/ChatPanel.jsx — add 'content' entries to the QUICK and TITLE dictionaries (and the intro-message ternary on line 30) so scope='content' renders without crashing. Without this, the entire 'Ask the agent' tab is broken on /studio.",
+    "Optional: convert export validation errors from 422 to 400 if strict spec compliance is desired."
+  ],
+  "critical_code_review_comments": [
+    "ChatPanel.jsx wasn't updated alongside the refactor that introduced the 'content' chat scope — exact symptom of an incomplete rename. Recommend a smoke unit test or PropTypes/TS guard on `scope`.",
+    "web_orchestrator.export() relies on `result.report` being present even for scope='strategy' (see _scoped_result). That's fine for current pipelines but tightly couples strategy export to a research artifact; consider making the strategy export self-contained.",
+    "/api/runs/{id}/files/{filename} silently searches first-level subdirs by basename — collisions across pdf/docx/pptx folders are theoretically possible since the file extensions differ, so OK in practice, but worth documenting.",
+    "Deprecated route surface returns 405 (Method Not Allowed) rather than 404 for some paths. Consider explicitly returning 404 for removed routes so clients fail loudly."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {
+    "backend": "100% (25/25 pytest)",
+    "frontend": "~85% — landing/studio/exports/tabs all OK; 'Ask the agent' tab broken by ChatPanel bug"
+  },
+  "test_credentials": "N/A — app has no user auth",
+  "seed_data_creation": "Reused existing complete run 7da57a83-626e-47b2-9289-044d2e4fbd6c (has result.report + result.gtm_strategy + result.content) for export and chat tests. Created and deleted a transient TEST_seq_smoke run and a TEST_no_strategy_yet run as part of the pytest run.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Sequential pipeline is solid: pytest at /app/backend/tests/backend_test.py covers the new contract and runs in <30s by reusing the seeded run. The single open frontend bug is ChatPanel.jsx missing the 'content' scope in its QUICK/TITLE dicts (crashes the Ask-the-agent tab). After main agent fixes ChatPanel, retest just the /studio chat tab. To test a live pipeline reaching awaiting_content_approval (so approve-content / regenerate-content testids appear), expect ~3-5 min runtime.",
+  "rca of the issue": "ChatPanel was refactored to accept scope='content' (used by ContentStudio's new 'Ask the agent' tab), but the QUICK and TITLE constants inside ChatPanel.jsx still only contain entries for 'research' and 'strategy'. When ContentStudio mounts <ChatPanel scope='content' />, the ChatPanel becomes 'ready' (because run.status === 'complete') and tries to render quick prompts via `QUICK[scope].map(...)`. Since `QUICK['content']` is undefined, this throws TypeError: Cannot read properties of undefined (reading 'map'), unmounting the entire tab tree and showing the CRA error overlay. Reproduction: localStorage.setItem('move:active_run_id', '7da57a83-...'), navigate to /studio, click [data-testid='tab-chat']. Mitigation: in /app/frontend/src/components/ChatPanel.jsx add `content: ['What is the headline insight?', 'Draft a LinkedIn post for this', 'Summarise the email sequence']` (or similar) to QUICK and `content: 'Ask about the content'` to TITLE; update the intro-message ternary on line 30 to handle 'content'."
+}

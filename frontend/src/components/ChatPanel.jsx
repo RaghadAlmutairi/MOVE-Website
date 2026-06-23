@@ -55,9 +55,7 @@ export default function ChatPanel({ scope = "research", className = "" }) {
   };
 
   const ready = run?.status === "complete" || run?.status === "awaiting_research_approval"
-              || run?.status === "awaiting_strategy_approval" || run?.status === "awaiting_phase_a_approval"
-              || run?.status === "awaiting_strategy_and_phase_a_approval"
-              || run?.status === "ready_for_phase_b" || run?.status === "awaiting_phase_b_approval";
+              || run?.status === "awaiting_strategy_approval" || run?.status === "awaiting_content_approval";
 
   return (
     <div className={`rounded-2xl border border-ink-border bg-ink-surface flex flex-col ${className}`} data-testid={`chat-panel-${scope}`}>

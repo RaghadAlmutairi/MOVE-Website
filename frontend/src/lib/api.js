@@ -1,5 +1,5 @@
-// MOVE backend client. Every endpoint here maps 1:1 to a documented gate
-// in agents/orchestrator.py (gtm_v4_fixed). No fake endpoints.
+// MOVE backend client. Every endpoint here maps 1:1 to the sequential
+// pipeline (Research -> Strategy -> Content -> Export).
 const RAW_BASE = process.env.REACT_APP_BACKEND_URL || "";
 const API = `${RAW_BASE.replace(/\/$/, "")}/api`;
 
@@ -24,24 +24,30 @@ export const api = {
   getRun: (id) => req(`/runs/${id}`),
   deleteRun: (id) => req(`/runs/${id}`, { method: "DELETE" }),
 
-  approveResearch: (id, runStrategy = true, runContent = true) =>
-    req(`/runs/${id}/approve_research`, { method: "POST", body: JSON.stringify({ run_strategy: runStrategy, run_content: runContent }) }),
+  // Sequential gates: research -> strategy -> content
+  approveResearch: (id) => req(`/runs/${id}/approve_research`, { method: "POST" }),
   regenerateResearch: (id) => req(`/runs/${id}/regenerate_research`, { method: "POST" }),
 
   approveStrategy: (id) => req(`/runs/${id}/approve_strategy`, { method: "POST" }),
   regenerateStrategy: (id) => req(`/runs/${id}/regenerate_strategy`, { method: "POST" }),
 
-  approvePhaseA: (id) => req(`/runs/${id}/approve_phase_a`, { method: "POST" }),
-  regeneratePhaseA: (id) => req(`/runs/${id}/regenerate_phase_a`, { method: "POST" }),
+  approveContent: (id) => req(`/runs/${id}/approve_content`, { method: "POST" }),
+  regenerateContent: (id) => req(`/runs/${id}/regenerate_content`, { method: "POST" }),
 
-  startPhaseB: (id, channels) => req(`/runs/${id}/phase_b`, { method: "POST", body: JSON.stringify({ channels }) }),
-  approvePhaseB: (id) => req(`/runs/${id}/approve_phase_b`, { method: "POST" }),
-  regeneratePhaseB: (id) => req(`/runs/${id}/regenerate_phase_b`, { method: "POST" }),
-
-  exportFile: (id, format) => req(`/runs/${id}/export`, { method: "POST", body: JSON.stringify({ format }) }),
+  // Exports
+  // - format: "pdf" | "docx" | "pptx" | "zip"
+  // - scope:  "research" | "strategy" | "combined"  (required for pdf/docx)
+  exportFile: (id, format, scope = null) =>
+    req(`/runs/${id}/export`, {
+      method: "POST",
+      body: JSON.stringify(scope ? { format, scope } : { format }),
+    }),
+  exportZip: (id) =>
+    req(`/runs/${id}/export`, { method: "POST", body: JSON.stringify({ format: "zip" }) }),
   fileUrl: (id, filename) => `${API}/runs/${id}/files/${filename}`,
 
-  chat: (id, scope, messages) => req(`/runs/${id}/chat`, { method: "POST", body: JSON.stringify({ scope, messages }) }),
+  chat: (id, scope, messages) =>
+    req(`/runs/${id}/chat`, { method: "POST", body: JSON.stringify({ scope, messages }) }),
 };
 
 // Long-poll a run until a terminal/awaiting state.
@@ -63,8 +69,7 @@ export function pollRun(id, onUpdate, intervalMs = 2000) {
 }
 
 // `activeRun` stores ONLY the opaque server-issued run UUID — never auth tokens
-// or secrets. Authentication, if/when added, must use httpOnly cookies issued
-// by the backend, not localStorage. See INTEGRATION_REPORT.md for context.
+// or secrets.
 const KEY = "move:active_run_id";
 export const activeRun = {
   get: () => { try { return localStorage.getItem(KEY) || null; } catch (e) { void e; return null; } },

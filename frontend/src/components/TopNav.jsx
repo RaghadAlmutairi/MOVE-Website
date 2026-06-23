@@ -16,7 +16,6 @@ import RunStatusPill from "@/components/RunStatusPill";
 const NAV = [
   { to: "/research", label: "Research" },
   { to: "/ideation", label: "Strategy" },
-  { to: "/command-center", label: "Studio" },
   { to: "/studio", label: "Content" },
 ];
 

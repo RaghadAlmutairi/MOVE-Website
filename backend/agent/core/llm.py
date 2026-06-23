@@ -51,12 +51,12 @@ def parse_llm(*, model, system, user, schema, temperature=0.1,
                 return out
             except Exception as e:
                 last_err = e
-                print(f"        \u26a0 LLM error{tag} ({mdl}, attempt {attempt}/{retries}): "
+                print(f"        [!] LLM error{tag} ({mdl}, attempt {attempt}/{retries}): "
                       f"{str(e)[:90]}")
                 if attempt < retries:
                     time.sleep(min(2 ** (attempt - 1), 8))   # exponential backoff
         if mi + 1 < len(models):
-            print(f"        \u21aa failing over to {models[mi + 1]}{tag}")
+            print(f"        [->] failing over to {models[mi + 1]}{tag}")
 
     raise RuntimeError(f"parse_llm failed{tag} after retries + fallback: {last_err}")
 
@@ -80,5 +80,5 @@ def enhance_with_claude(system: str, user: str, max_tokens: int = 1800) -> str:
         text = "\n".join(parts).strip()
         return text or user
     except Exception as e:
-        print(f"        \u26a0 Claude enhancement skipped: {str(e)[:90]}")
+        print(f"        [!] Claude enhancement skipped: {str(e)[:90]}")
         return user

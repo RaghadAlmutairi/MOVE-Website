@@ -8,10 +8,7 @@ const ACTIVE_STATUSES = new Set([
   "running",
   "awaiting_research_approval",
   "awaiting_strategy_approval",
-  "awaiting_phase_a_approval",
-  "awaiting_strategy_and_phase_a_approval",
-  "ready_for_phase_b",
-  "awaiting_phase_b_approval",
+  "awaiting_content_approval",
 ]);
 
 export function RunProvider({ children }) {

@@ -3,40 +3,33 @@
 
 Responsibility
 --------------
-Coordinate the three specialist agents in the correct order, enforce
-human-in-the-loop approval at every stage, and manage parallel execution
-where the workflow permits it.
+Coordinate the three specialist agents in strict sequential order, enforce
+human-in-the-loop approval at every stage, and manage the unified pipeline.
 
-This is the single place that owns Phase A / Phase B content sequencing.
-The content agent (agents/content_agent.py) provides pure generation
-functions; the orchestrator decides *when* to call them.
+Sequential Workflow: Research → Strategy → Content
 
 Execution order
 ---------------
 
   ┌─────────────────────────────────────────────────────────┐
   │  STEP 1 – RESEARCH AGENT                                │
-  │  Runs alone first.  Output: approved research Report.   │
+  │  Runs first. Output: approved research Report.          │
   └──────────────────────────┬──────────────────────────────┘
                              │  [Human approves research]
                              ▼
-  ┌──────────────────────────────────────────────────────────┐
-  │  STEP 2 – STRATEGY AGENT  ║  CONTENT AGENT (Phase A)    │
-  │  GTM strategy             ║  Social-media content only   │
-  │  (parallel execution)     ║  Uses research output only   │
-  └──────────────────────────────────────────────────────────┘
-                             │
-     [Human approves strategy]   [Human approves Phase A content]
-                             │
+  ┌─────────────────────────────────────────────────────────┐
+  │  STEP 2 – STRATEGY AGENT                                │
+  │  GTM strategy grounded in the research report.          │
+  └──────────────────────────┬──────────────────────────────┘
+                             │  [Human approves strategy]
                              ▼
   ┌─────────────────────────────────────────────────────────┐
-  │  STEP 3 – CONTENT AGENT (Phase B)                       │
-  │  Full content suite: blogs / SEO / emails               │
+  │  STEP 3 – CONTENT (unified phase)                       │
+  │  Full content suite: LinkedIn / blogs / SEO / emails    │
   │  Uses BOTH research output AND approved GTM strategy    │
+  │  Automatically starts after strategy approval           │
   └─────────────────────────────────────────────────────────┘
-                             │
-          [Human approves full content]
-                             │
+                             │  [Human approves content]
                              ▼
   ┌─────────────────────────────────────────────────────────┐
   │  STEP 4 – REPORTING                                     │
@@ -45,13 +38,13 @@ Execution order
 
 Human-in-the-loop gates
 -----------------------
-Every stage pauses for human review before the next stage starts.
-The orchestrator never skips a gate.  Phase B is only started after
-BOTH the strategy AND Phase A content have been approved.
+- Research approval required before Strategy
+- Strategy approval required before Content
+- Content automatically starts after Strategy approval (no separate gate)
+- Content approval required before final export
 """
 import os
 import json
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 
 from core.config import IN_NOTEBOOK
@@ -62,7 +55,7 @@ from export.export import market_report_analysis_tool
 from export.export_strategy import export_strategy_pdf
 
 from agents.strategy_agent import generate_gtm_strategy
-from agents.content_agent import generate_content_phase_a, generate_content_phase_b
+from agents.content_agent import generate_content_studio
 
 # All tools live in the tools package.
 from tools.content_tools import generate_ppt, INTENT_KEYWORDS, TEXT_TOOL_NAMES, CONTENT_TOOLS
@@ -257,82 +250,32 @@ def _run_strategy(result: Dict[str, Any], max_attempts: int = 2) -> Optional[Dic
 
 
 # ---------------------------------------------------------------------------
-# Phase A – social-media content (runs in parallel with strategy agent)
+# Content Studio – full content suite (requires approved strategy)
 # ---------------------------------------------------------------------------
 
-def _run_content_phase_a(
-    result: Dict[str, Any],
-    max_attempts: int = 2,
-) -> Optional[Dict[str, Any]]:
-    """Generate and validate Phase A (social-media) content from research only.
-
-    Runs concurrently with the strategy agent.  Must NOT use any strategy output.
-    """
-    plan   = _plan_obj(result)
-    report = result["report"]
-    bundle = None
-
-    for attempt in range(1, max_attempts + 1):
-        print(f"\n[content agent] Phase A – social content (attempt {attempt}) …")
-        try:
-            bundle = generate_content_phase_a(result["query"], plan, report).model_dump()
-        except Exception as e:
-            print(f"   ⚠ Phase A content generation failed: {str(e)[:90]}")
-            return None
-
-        # Phase A scope: LinkedIn posts only.
-        bundle["blog_drafts"]  = []
-        bundle["email_drafts"] = []
-
-        issues = guardrails.content_guardrails(bundle)
-        ev     = evaluation.evaluate_content(bundle)
-        bundle["_evaluation"] = ev
-        print(
-            f"   [eval] Phase A content overall={ev.get('overall')} "
-            f"passed={ev.get('passed')} (threshold {ev.get('threshold')})"
-        )
-        if issues:
-            print("   brand guardrail issues: " + "; ".join(issues))
-
-        if (not issues and ev.get("passed")) or attempt == max_attempts:
-            if issues or not ev.get("passed"):
-                print("   proceeding with noted gaps.")
-            return bundle
-
-        print("   brand guardrails failed → enforcing Phase A REGENERATE …")
-
-    return bundle
-
-
-# ---------------------------------------------------------------------------
-# Phase B – full content suite (requires approved strategy + Phase A)
-# ---------------------------------------------------------------------------
-
-def _run_content_phase_b(
+def _run_content_studio(
     result: Dict[str, Any],
     gtm: Dict[str, Any],
-    phase_a_bundle: Dict[str, Any],
     channels: List[str],
     max_attempts: int = 2,
 ) -> Optional[Dict[str, Any]]:
-    """Generate and validate Phase B (full content suite) using the GTM strategy.
+    """Generate and validate the Content Studio bundle using research + GTM strategy.
 
-    Requires BOTH an approved strategy AND an approved Phase A bundle.
-    This function is the only place in the codebase where Phase B is initiated.
+    Requires an approved GTM strategy.  This is the single place in the codebase
+    where Content Studio generation is initiated.
     """
     plan   = _plan_obj(result)
     report = result["report"]
     bundle = None
 
     for attempt in range(1, max_attempts + 1):
-        print(f"\n[content agent] Phase B – full content suite (attempt {attempt}) …")
+        print(f"\n[content agent] Content Studio – full content suite (attempt {attempt}) …")
         try:
-            bundle = generate_content_phase_b(
-                result["query"], plan, report, gtm, phase_a_bundle
+            bundle = generate_content_studio(
+                result["query"], plan, report, gtm
             ).model_dump()
-            bundle["phase"] = "B"
         except Exception as e:
-            print(f"   ⚠ Phase B content generation failed: {str(e)[:90]}")
+            print(f"   ⚠ Content Studio generation failed: {str(e)[:90]}")
             return None
 
         bundle = _filter_content(bundle, channels)
@@ -341,7 +284,7 @@ def _run_content_phase_b(
         ev     = evaluation.evaluate_content(bundle)
         bundle["_evaluation"] = ev
         print(
-            f"   [eval] Phase B content overall={ev.get('overall')} "
+            f"   [eval] Content Studio overall={ev.get('overall')} "
             f"passed={ev.get('passed')} (threshold {ev.get('threshold')})"
         )
         if issues:
@@ -352,7 +295,7 @@ def _run_content_phase_b(
                 print("   proceeding with noted gaps.")
             return bundle
 
-        print("   brand guardrails failed → enforcing Phase B REGENERATE …")
+        print("   brand guardrails failed → enforcing Content Studio REGENERATE …")
 
     return bundle
 
@@ -375,12 +318,10 @@ def _filter_content(bundle: Dict[str, Any], channels: List[str]) -> Dict[str, An
         return bundle
     if "linkedin" not in channels:
         bundle["linkedin_posts"] = []
-    if "blog" not in channels and "seo" not in channels:
+    if "blog" not in channels:
         bundle["blog_drafts"] = []
-    elif "blog" not in channels and "seo" in channels:
-        bundle["blog_drafts"] = [
-            b for b in bundle.get("blog_drafts", []) if b.get("kind") == "SEO"
-        ]
+    if "seo" not in channels:
+        bundle["seo_articles"] = []
     if "email" not in channels:
         bundle["email_drafts"] = []
     return bundle
@@ -403,9 +344,7 @@ def _call_tool(t: Any, **kwargs: Any) -> Dict[str, Any]:
 def run_pipeline(result: Dict[str, Any], regenerate_research) -> Dict[str, Any]:
     """Run the full multi-agent pipeline with human-in-the-loop at every stage.
 
-    This is the orchestrator entry point called by main.py after research
-    completes.  It owns all sequencing, parallelism, phase decisions, and
-    approval gates.
+    Pipeline: Research → Strategy → Content Studio → Export
 
     Parameters
     ----------
@@ -449,139 +388,91 @@ def run_pipeline(result: Dict[str, Any], regenerate_research) -> Dict[str, Any]:
             return new
         result = new
 
-    # Export research document (optional).
-    fmt = _ask_exact(
-        "\nExport research document? PDF / Word / No : ",
-        {k: v for k, v in _FMT.items() if v != "pptx"},
-        attempts=3,
-    )
-    if fmt and fmt != "no":
-        _export(result, fmt)
+    # Auto-export research documents (PDF + DOCX)
+    print("\n[Exporting] Research documents...")
+    _export(result, "pdf")
+    _export(result, "word")
 
     # ------------------------------------------------------------------
-    # STEP 2: STRATEGY + CONTENT PHASE A (run in parallel)
-    # Both require research approval.
-    # Phase A does NOT require strategy — runs alongside it.
+    # STEP 2: STRATEGY
     # ------------------------------------------------------------------
     run_strategy = _ask_yes_no("\nCreate your GTM strategy? (y/n) : ")
-    run_content  = _ask_yes_no("\nGenerate marketing content? (y/n) : ")
 
     gtm: Optional[Dict[str, Any]] = None
-    phase_a_bundle: Optional[Dict[str, Any]] = None
 
-    if run_strategy or run_content:
-        print("\n\n═══════════════ STEP 2: STRATEGY + CONTENT PHASE A (parallel) ═══════════════")
+    if run_strategy:
+        print("\n\n═══════════════ STEP 2: STRATEGY ═══════════════")
+        gtm = _run_strategy(result)
 
-        futures: Dict[str, Any] = {}
-        with ThreadPoolExecutor(max_workers=2) as ex:
-            if run_strategy:
-                futures["strategy"] = ex.submit(_run_strategy, result)
-            if run_content:
-                futures["phase_a"]  = ex.submit(_run_content_phase_a, result)
-
-        if "strategy" in futures:
-            gtm = futures["strategy"].result()
-        if "phase_a" in futures:
-            phase_a_bundle = futures["phase_a"].result()
-
-    # ---- 2a) Human approves STRATEGY ----
-    if run_strategy and gtm:
-        print("\n\n─── STRATEGY APPROVAL ───")
-        result["gtm_strategy"] = gtm
-        for _ in range(3):
-            _show_md("\n".join(_gtm_md(gtm)), "GTM STRATEGY")
-            sc = _ask_exact("\nApproved? / Re-Generate : ", _APPROVE, attempts=3)
-            if sc is None or sc == "approved":
-                memory.log_approval(company, "strategy:approved")
-                break
-            gtm = _run_strategy(result)
-            if gtm is None:
-                print("   ⚠ Strategy regeneration failed; proceeding with last draft.")
-                gtm = result["gtm_strategy"]
-                break
+        if gtm:
             result["gtm_strategy"] = gtm
+            for _ in range(3):
+                _show_md("\n".join(_gtm_md(gtm)), "GTM STRATEGY")
+                sc = _ask_exact("\nApproved? / Re-Generate : ", _APPROVE, attempts=3)
+                if sc is None or sc == "approved":
+                    memory.log_approval(company, "strategy:approved")
+                    break
+                gtm = _run_strategy(result)
+                if gtm is None:
+                    print("   ⚠ Strategy regeneration failed; proceeding with last draft.")
+                    gtm = result["gtm_strategy"]
+                    break
+                result["gtm_strategy"] = gtm
 
-        sf = _ask_exact(
-            "\nExport GTM strategy? PDF / No : ",
-            {"pdf": "pdf", "no": "no", "n": "no"},
-            attempts=3,
-        )
-        if sf == "pdf":
+            # Auto-export strategy documents (PDF + DOCX + PPTX)
+            print("\n[Exporting] Strategy documents...")
             p = export_strategy_pdf(result)
             if p:
                 _deliver_file(p)
                 result.setdefault("exports", []).append({"format": "strategy_pdf", "path": p})
                 memory.log_approval(company, "strategy:pdf")
 
-    # ---- 2b) Human approves PHASE A CONTENT (social-media) ----
-    if run_content and phase_a_bundle:
-        print("\n\n─── CONTENT PHASE A APPROVAL (social-media content) ───")
-        result["content_phase_a"] = phase_a_bundle
-        for _ in range(3):
-            _show_md("\n".join(_content_md(phase_a_bundle)), "SOCIAL MEDIA CONTENT (Phase A)")
-            cc = _ask_exact("\nApproved? / Re-Generate : ", _APPROVE, attempts=3)
-            if cc is None or cc == "approved":
-                memory.log_approval(company, "content_phase_a:approved")
-                break
-            new_bundle = _run_content_phase_a(result)
-            if new_bundle is None:
-                print("   ⚠ Regeneration failed; proceeding with last Phase A draft.")
-                break
-            phase_a_bundle = new_bundle
-            result["content_phase_a"] = phase_a_bundle
-
     # ------------------------------------------------------------------
-    # STEP 3: CONTENT PHASE B – full suite
-    # Gate: requires BOTH approved strategy AND approved Phase A bundle.
+    # STEP 3: CONTENT STUDIO – full suite
+    # Gate: requires approved strategy (gtm must be set).
+    # Automatically starts after strategy approval.
+    # Automatically generates ALL content channels.
     # ------------------------------------------------------------------
-    if run_content and gtm and phase_a_bundle:
-        print("\n\n═══════════════ STEP 3: CONTENT PHASE B (full content suite) ═══════════════")
+    if run_strategy and gtm and result.get("gtm_strategy"):
+        print("\n\n═══════════════ STEP 3: CONTENT STUDIO ═══════════════")
         print(
-            "   Phase B uses the approved GTM strategy + Phase A draft to produce\n"
-            "   blogs, SEO articles, and email sequences.\n"
+            "   Generating all content channels: LinkedIn, Blog, SEO, Email\n"
         )
 
-        sel = _ask_multi(
-            "\nSelect content channels – linkedin / blog / seo / email"
-            "  (add pdf / ppt to export, or type 'all') : ",
-            _CONTENT_OPTS,
-        )
-        channels = [t for t in sel if t in ("linkedin", "blog", "seo", "email")]
-        formats  = [t for t in sel if t in ("pdf", "pptx")]
+        # Auto-generate ALL content channels
+        channels = ["linkedin", "blog", "seo", "email"]
 
-        phase_b_bundle: Optional[Dict[str, Any]] = None
+        studio_bundle: Optional[Dict[str, Any]] = None
         for _ in range(1, 3):
-            phase_b_bundle = _run_content_phase_b(
-                result, gtm, phase_a_bundle, channels
-            )
-            if phase_b_bundle is None:
+            studio_bundle = _run_content_studio(result, gtm, channels)
+            if studio_bundle is None:
                 break
-            result["content"] = phase_b_bundle
-            _show_md("\n".join(_content_md(phase_b_bundle)), "FULL CONTENT SUITE (Phase B)")
+            result["content"] = studio_bundle
+            _show_md("\n".join(_content_md(studio_bundle)), "CONTENT STUDIO")
             cb = _ask_exact("\nApproved? / Re-Generate : ", _APPROVE, attempts=3)
             if cb is None or cb == "approved":
-                memory.log_approval(company, "content_phase_b:approved")
+                memory.log_approval(company, "content_studio:approved")
                 break
 
-        for f in formats:
-            if _export(result, f):
-                memory.log_approval(company, f"content:{f}")
-
     # ------------------------------------------------------------------
-    # STEP 4: REPORTING – optional combined export
+    # STEP 4: AUTO-EXPORT ALL DOCUMENTS
     # ------------------------------------------------------------------
-    print("\n\n═══════════════ STEP 4: REPORTING ═══════════════")
-    has_extras = bool(gtm or result.get("content"))
-    if has_extras and not result.get("exports"):
-        cf = _ask_exact(
-            "\nExport combined report? PDF / Word / PPTX / No : ",
-            _FMT,
-            attempts=3,
-        )
-        if cf and cf != "no":
-            _export(result, cf)
-            memory.log_approval(company, f"combined:{cf}")
+    print("\n\n═══════════════ STEP 4: EXPORTING DOCUMENTS ═══════════════")
+    
+    # Export combined report (Research + Strategy + Content) - PDF + DOCX
+    if gtm or result.get("content"):
+        print("[Exporting] Combined report (Research + Strategy + Content)...")
+        _export(result, "pdf")
+        _export(result, "word")
+        memory.log_approval(company, "combined:pdf")
+        memory.log_approval(company, "combined:word")
+    
+    # Export strategy PPTX if strategy exists
+    if gtm:
+        print("[Exporting] Strategy presentation...")
+        _export(result, "pptx")
+        memory.log_approval(company, "strategy:pptx")
 
     memory.save_run(result)
-    print("\n✓ Session complete. Session terminated.")
+    print("\n✓ Session complete. All documents exported.")
     return result

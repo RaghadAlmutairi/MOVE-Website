@@ -1,45 +1,41 @@
 # -*- coding: utf-8 -*-
-"""CONTENT AGENT.
+"""CONTENT AGENT – Content Studio.
 
 Responsibility
 --------------
-Produce ContentBundle objects for Phase A and Phase B.  This module owns
+Produce a single ContentBundle for the Content Studio stage.  This module owns
 ONLY the pure generation logic and brief-compression helpers.
 
-  Phase A  – Social-media content (LinkedIn posts) drafted directly from
-             the research report.  Designed to run IN PARALLEL with the
-             strategy agent; it must NOT depend on GTM strategy output.
+  Content Studio – Full content suite (LinkedIn posts, blogs, SEO articles,
+                   email sequences) produced in one unified pass, grounded in
+                   BOTH the research report AND the finalised GTM strategy.
 
-  Phase B  – Full content suite (blogs, SEO articles, email sequences)
-             refined against the finalised GTM strategy.
+  Design note: Content Studio replaces the old Phase A / Phase B split.
+  There is no longer a separate "social-media only" pass that runs in parallel
+  with the strategy agent.  All content is generated after the strategy is
+  approved, which guarantees every asset is strategy-aligned from the start.
 
 What does NOT belong here
 -------------------------
 * Tool definitions (generate_email / blog / seo / pdf / ppt) → tools/content_tools.py
-* Phase A / Phase B orchestration (when to run each phase, approval gates,
-  parallel execution) → agents/orchestrator.py
+* Content Studio orchestration (when to run, approval gates) → agents/orchestrator.py
 
-Input (Phase A)
----------------
+Input
+-----
 query   : str             – user's original goal
 plan    : ToolPlan
 report  : Dict[str, Any]  – approved research Report
-
-Input (Phase B)
----------------
-All Phase A inputs PLUS:
 gtm     : Dict[str, Any]  – approved GTM strategy
-draft   : Dict[str, Any]  – Phase A ContentBundle (to refine, not replace)
 
 Output
 ------
-ContentBundle (Pydantic model) per phase.
+ContentBundle (Pydantic model).
 """
 from typing import Any, Dict, List, Optional
 
 from core.config import CONTENT_MODEL, CONTENT_EFFORT, traceable
 from core.llm import parse_llm
-from core.prompts import CONTENT_PHASE_A_PROMPT, CONTENT_PHASE_B_PROMPT
+from core.prompts import CONTENT_STUDIO_PROMPT
 from core.schemas import ContentBundle, ToolPlan
 from agents.strategy_agent import _report_brief
 
@@ -84,23 +80,6 @@ def _strategy_brief(gtm: Dict[str, Any], max_chars: int = 3800) -> str:
     )[:max_chars]
 
 
-def _content_brief(c: Dict[str, Any], max_chars: int = 3500) -> str:
-    """Summarise an existing ContentBundle for Phase B prompt."""
-    def block(items: Optional[List[Dict]], fields: List[str]) -> str:
-        out = [
-            " | ".join(f"{k}={str(it.get(k, ''))[:80]}" for k in fields)
-            for it in (items or [])
-        ]
-        return "\n".join(out) or "—"
-
-    return (
-        f"POSITIONING: {c.get('positioning_line', '')}\n"
-        f"LINKEDIN:\n{block(c.get('linkedin_posts'), ['kind', 'hook'])}\n"
-        f"BLOGS:\n{block(c.get('blog_drafts'), ['kind', 'title'])}\n"
-        f"EMAILS:\n{block(c.get('email_drafts'), ['kind', 'subject'])}"
-    )[:max_chars]
-
-
 # ---------------------------------------------------------------------------
 # Placeholder enforcement (deterministic safety net)
 # ---------------------------------------------------------------------------
@@ -126,65 +105,22 @@ def _force_email_placeholders(bundle: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Phase A – social-media content (parallel with strategy agent)
+# Content Studio – unified single-pass generation
 # ---------------------------------------------------------------------------
 
-@traceable(name="content_phase_a")
-def generate_content_phase_a(
-    query: str,
-    plan: ToolPlan,
-    report: Dict[str, Any],
-) -> ContentBundle:
-    """Phase A: draft LinkedIn / social content from research only.
-
-    This phase is designed to run concurrently with the strategy agent.
-    It must NOT depend on any strategy output; only the research report
-    is used as input.
-
-    Parameters
-    ----------
-    query  : user's original goal
-    plan   : routing metadata
-    report : approved research Report dict
-
-    Returns
-    -------
-    ContentBundle (Phase A – social content only)
-    """
-    user = (
-        f"USER GOAL: {query}\n"
-        f"SUBJECT: {plan.subject_entity or '(market)'}\n\n"
-        f"=== MARKET RESEARCH BRIEF ===\n{_report_brief(report)}\n\n"
-        "Produce the Phase A content set now."
-    )
-    out = parse_llm(
-        model=CONTENT_MODEL,
-        system=CONTENT_PHASE_A_PROMPT,
-        user=user,
-        schema=ContentBundle,
-        reasoning_effort=CONTENT_EFFORT,
-        label="content-phase-a",
-    )
-    return ContentBundle(**_force_email_placeholders(out.model_dump()))
-
-
-# ---------------------------------------------------------------------------
-# Phase B – full content suite (requires approved strategy)
-# ---------------------------------------------------------------------------
-
-@traceable(name="content_phase_b")
-def generate_content_phase_b(
+@traceable(name="content_studio")
+def generate_content_studio(
     query: str,
     plan: ToolPlan,
     report: Dict[str, Any],
     gtm: Dict[str, Any],
-    draft: Dict[str, Any],
 ) -> ContentBundle:
-    """Phase B: refine and expand the full content suite against the GTM strategy.
+    """Content Studio: generate the full content suite from research + GTM strategy.
 
-    This phase runs ONLY AFTER the strategy agent has completed and been
-    approved.  It refines the Phase A draft and adds blogs, SEO articles,
-    and email sequences grounded in the GTM strategy.
+    This is the single unified content generation phase that runs sequentially
+    after strategy approval. All content is strategy-grounded from the start.
+
+    Sequential workflow: Research → Strategy → Content
 
     Parameters
     ----------
@@ -192,26 +128,25 @@ def generate_content_phase_b(
     plan   : routing metadata
     report : approved research Report dict
     gtm    : approved GTM strategy dict
-    draft  : Phase A ContentBundle dict (to refine, not discard)
 
     Returns
     -------
-    ContentBundle (Phase B – full suite)
+    ContentBundle – full suite (LinkedIn posts, blogs, emails)
     """
     user = (
         f"USER GOAL: {query}\n"
         f"SUBJECT: {plan.subject_entity or '(market)'}\n\n"
-        f"=== RESEARCH BRIEF ===\n{_report_brief(report)}\n\n"
+        f"=== MARKET RESEARCH BRIEF ===\n{_report_brief(report)}\n\n"
         f"=== GTM STRATEGY ===\n{_strategy_brief(gtm)}\n\n"
-        f"=== EXISTING PHASE-A CONTENT (refine all of it) ===\n{_content_brief(draft)}\n\n"
-        "Rewrite and align every asset to the strategy. Produce Phase B now."
+        "Produce the full Content Studio asset set now."
     )
     out = parse_llm(
         model=CONTENT_MODEL,
-        system=CONTENT_PHASE_B_PROMPT,
+        system=CONTENT_STUDIO_PROMPT,
         user=user,
         schema=ContentBundle,
         reasoning_effort=CONTENT_EFFORT,
-        label="content-phase-b",
+        label="content-studio",
     )
-    return ContentBundle(**_force_email_placeholders(out.model_dump()))
+    bundle = out.model_dump()
+    return ContentBundle(**_force_email_placeholders(bundle))

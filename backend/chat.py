@@ -88,17 +88,22 @@ def _system_prompt(scope: str, context: str) -> str:
     persona = {
         "research": "You are MOVE's research analyst. Answer the user's question using ONLY the research data below. Be concise (≤120 words), specific, and cite facts from the data. If the data does not contain the answer, say so plainly.",
         "strategy": "You are MOVE's GTM strategy advisor. Answer using ONLY the strategy data below. Be concise (≤120 words), action-oriented, and specific. If the user asks for a change, describe what you would change but DO NOT claim to have applied it — only the Regenerate button does that.",
+        "content":  "You are MOVE's content marketing advisor. Answer using ONLY the strategy data below as context for the generated content suite (LinkedIn / blog / SEO / email). Be concise (≤120 words) and constructive. If the user asks for a content change, describe what you would change but DO NOT claim to have applied it — only the Regenerate button does that.",
     }[scope]
     return f"{persona}\n\n===CONTEXT===\n{context}\n===END CONTEXT==="
 
 
-def reply(run_doc: Dict[str, Any], scope: Literal["research", "strategy"],
+def reply(run_doc: Dict[str, Any], scope: Literal["research", "strategy", "content"],
           messages: List[Dict[str, str]]) -> Dict[str, str]:
     """Synchronously call OpenAI and return a chat completion message."""
     if not run_doc or "result" not in run_doc:
         return {"role": "assistant", "content": "I don't see a completed run yet. Please run research first."}
     result = run_doc["result"]
-    ctx = _research_context(result) if scope == "research" else _strategy_context(result)
+    if scope == "research":
+        ctx = _research_context(result)
+    else:
+        # both strategy and content scopes ground on the strategy snapshot
+        ctx = _strategy_context(result)
     sys = {"role": "system", "content": _system_prompt(scope, ctx)}
     # Keep last ~10 user/assistant turns
     history = [m for m in messages if m.get("role") in ("user", "assistant") and m.get("content")][-10:]

@@ -272,5 +272,5 @@ def export_strategy_pdf(result: Dict[str, Any], path: Optional[str] = None) -> O
     doc = SimpleDocTemplate(out, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm,
                             topMargin=18 * mm, bottomMargin=16 * mm)
     doc.build(fl, onFirstPage=_cover)
-    print(f"   \u2713 Strategy PDF written: {out}")
+    print(f"   [OK] Strategy PDF written: {out}")
     return out

@@ -9,10 +9,7 @@ const LABEL = {
   running: "Running",
   awaiting_research_approval: "Awaiting research approval",
   awaiting_strategy_approval: "Awaiting strategy approval",
-  awaiting_phase_a_approval: "Awaiting content approval",
-  awaiting_strategy_and_phase_a_approval: "Awaiting approvals",
-  ready_for_phase_b: "Ready for Phase B",
-  awaiting_phase_b_approval: "Awaiting Phase B approval",
+  awaiting_content_approval: "Awaiting content approval",
   complete: "Complete",
   failed: "Failed",
 };

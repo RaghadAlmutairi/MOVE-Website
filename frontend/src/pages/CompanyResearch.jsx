@@ -37,13 +37,16 @@ export default function CompanyResearch() {
 
   // Determine progress tracker state
   const completedStages = [];
-  if (status && status !== 'awaiting_research_approval' && status !== 'running') {
+  if (status && status !== 'awaiting_research_approval' && status !== 'running' && status !== 'failed') {
     completedStages.push('research');
   }
-  if (status && ['awaiting_phase_b_approval', 'complete', 'ready_for_phase_b'].includes(status)) {
-    completedStages.push('strategy', 'content');
+  if (status === 'awaiting_content_approval' || status === 'complete') {
+    completedStages.push('strategy');
   }
-  
+  if (status === 'complete') {
+    completedStages.push('content');
+  }
+
   const currentStage = isResearchRunning ? 'research' :
                        (status === 'awaiting_research_approval' ? 'research' : null);
 
@@ -57,11 +60,11 @@ export default function CompanyResearch() {
     finally { setSubmitting(false); }
   };
 
-  const onApprove = async (runStrategy, runContent) => {
+  const onApprove = async () => {
     if (!run) return;
     try {
-      await mutate(() => api.approveResearch(run.id, runStrategy, runContent));
-      toast.success("Research approved", { description: "Strategy + Phase A starting in parallel." });
+      await mutate(() => api.approveResearch(run.id));
+      toast.success("Research approved", { description: "Generating GTM strategy…" });
       navigate("/ideation");
     } catch (e) { toast.error("Approval failed", { description: e.message }); }
   };
@@ -416,30 +419,18 @@ function ListSection({ title, items, icon: Icon, tone = "muted" }) {
 function EmptyText({ text }) { return <div className="rounded-xl border border-dashed border-ink-border p-6 text-sm text-ink-muted text-center">{text}</div>; }
 
 function ApprovalBar({ onApprove, onRegenerate }) {
-  const [runStrategy, setRunStrategy] = useState(true);
-  const [runContent, setRunContent] = useState(true);
   return (
-    <div className="mt-8 rounded-2xl border border-brand-primary/40 bg-gradient-to-r from-brand-primary/15 via-brand-accent/10 to-brand-secondary/15 p-6">
+    <div className="mt-8 rounded-2xl border border-move-grad-3/40 bg-gradient-to-r from-move-grad-1-tint via-move-grad-2-tint to-move-grad-3-tint p-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex-1">
-          <div className="font-heading text-lg text-ink-text">Approve research and continue?</div>
-          <p className="text-sm text-ink-muted mt-1">When you approve, the strategy agent and Phase A content agent start in parallel — matching the agent system&apos;s documented flow.</p>
-          <div className="mt-3 flex flex-wrap gap-3 text-sm">
-            <label className="inline-flex items-center gap-2 cursor-pointer">
-              <input data-testid="opt-strategy" type="checkbox" checked={runStrategy} onChange={(e) => setRunStrategy(e.target.checked)} className="accent-brand-primary" />
-              <span>Generate GTM strategy</span>
-            </label>
-            <label className="inline-flex items-center gap-2 cursor-pointer">
-              <input data-testid="opt-content" type="checkbox" checked={runContent} onChange={(e) => setRunContent(e.target.checked)} className="accent-brand-primary" />
-              <span>Generate marketing content (Phase A)</span>
-            </label>
-          </div>
+          <div className="font-heading text-lg text-move-ink">Approve research and continue?</div>
+          <p className="text-sm text-move-body mt-1">When you approve, the GTM strategy agent runs next, then content is generated automatically — sequential pipeline, you stay in control at every gate.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={onRegenerate} data-testid="regenerate-research" className="border-ink-border text-ink-text hover:bg-ink-surface">
+          <Button variant="outline" onClick={onRegenerate} data-testid="regenerate-research" className="border-move-border-ghost text-move-ink hover:bg-move-bg-subtle">
             <RefreshCw className="w-4 h-4 mr-1.5" /> Regenerate
           </Button>
-          <Button onClick={() => onApprove(runStrategy, runContent)} data-testid="approve-research" className="bg-brand-success hover:bg-[#0EA371] text-white shadow-lg shadow-brand-success/30" disabled={!runStrategy && !runContent}>
+          <Button onClick={onApprove} data-testid="approve-research" className="bg-move-success hover:opacity-90 text-white shadow-lg">
             <CheckCircle2 className="w-4 h-4 mr-1.5" /> Approve & continue
           </Button>
         </div>
@@ -451,9 +442,7 @@ function ApprovalBar({ onApprove, onRegenerate }) {
 function labelForStatus(s) {
   return ({
     awaiting_strategy_approval: "strategy ready for review",
-    awaiting_phase_a_approval: "Phase A ready for review",
-    awaiting_strategy_and_phase_a_approval: "strategy + Phase A ready",
-    ready_for_phase_b: "ready for Phase B",
+    awaiting_content_approval: "content ready for review",
     complete: "complete",
   }[s]) || s;
 }

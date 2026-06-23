@@ -1,27 +1,25 @@
 """
-MOVE backend — FastAPI gateway for the gtm_v4_fixed multi-agent pipeline.
+MOVE backend - FastAPI gateway for the sequential GTM agent pipeline.
 
-All routes are mounted under /api.  The agent layer is NOT modified;
+All routes are mounted under /api. The agent layer is NOT modified;
 this file only adds HTTP endpoints that drive the agent functions in
 the documented order (see web_orchestrator.py).
 
 Endpoints (under /api):
-  GET    /api/health                               health probe
-  POST   /api/runs                                  start a new run (research)
-  GET    /api/runs                                  list runs (history)
-  GET    /api/runs/{id}                             fetch full run state
-  POST   /api/runs/{id}/approve_research            advance past research gate
-  POST   /api/runs/{id}/regenerate_research         re-run research
-  POST   /api/runs/{id}/approve_strategy            approve strategy
-  POST   /api/runs/{id}/regenerate_strategy         re-run strategy
-  POST   /api/runs/{id}/approve_phase_a             approve Phase A content
-  POST   /api/runs/{id}/regenerate_phase_a          re-run Phase A
-  POST   /api/runs/{id}/phase_b                     start Phase B with channels
-  POST   /api/runs/{id}/approve_phase_b             approve Phase B content
-  POST   /api/runs/{id}/regenerate_phase_b          re-run Phase B
-  POST   /api/runs/{id}/export                      export {pdf|word|pptx|strategy_pdf}
-  GET    /api/runs/{id}/files/{filename}            download an export
-  DELETE /api/runs/{id}                             delete a run
+  GET    /api/health                                  health probe
+  POST   /api/runs                                     start a new run (research)
+  GET    /api/runs                                     list runs (history)
+  GET    /api/runs/{id}                                fetch full run state
+  DELETE /api/runs/{id}                                delete a run
+  POST   /api/runs/{id}/approve_research               advance to strategy
+  POST   /api/runs/{id}/regenerate_research            re-run research
+  POST   /api/runs/{id}/approve_strategy               advance to content
+  POST   /api/runs/{id}/regenerate_strategy            re-run strategy
+  POST   /api/runs/{id}/approve_content                final approval
+  POST   /api/runs/{id}/regenerate_content             re-run content
+  POST   /api/runs/{id}/export                         export {pdf|docx|pptx|zip}
+  GET    /api/runs/{id}/files/{filename}               download an export
+  POST   /api/runs/{id}/chat                           in-app chat
 """
 
 from __future__ import annotations
@@ -42,40 +40,30 @@ from starlette.middleware.cors import CORSMiddleware
 ROOT = Path(__file__).parent
 load_dotenv(ROOT / ".env")
 
-# Importing web_orchestrator triggers `import core.config` inside the agent,
-# which validates that OPENAI_API_KEY is set.
 import web_orchestrator as wo  # noqa: E402
 
 RUNS_DIR = ROOT / "runs"
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# ── Async Mongo (for read endpoints only; writes happen in web_orchestrator) ──
+# Async Mongo for read endpoints; writes happen in web_orchestrator.
 mongo_client = AsyncIOMotorClient(os.environ["MONGO_URL"])
 db = mongo_client[os.environ["DB_NAME"]]
 runs = db["gtm_runs"]
 
-app = FastAPI(title="MOVE — GTM Backend (gtm_v4_fixed)")
+app = FastAPI(title="MOVE - GTM Backend (sequential)")
 api = APIRouter(prefix="/api")
 
 
-# ── Schemas ───────────────────────────────────────────────────────────────────
+# Schemas
 class CreateRunRequest(BaseModel):
     query: str = Field(min_length=2, max_length=400)
     url: Optional[str] = ""
 
 
-class ApproveResearchRequest(BaseModel):
-    run_strategy: bool = True
-    run_content:  bool = True
-
-
-class PhaseBRequest(BaseModel):
-    channels: List[Literal["linkedin", "blog", "seo", "email"]]
-
-
 class ExportRequest(BaseModel):
-    format: Literal["pdf", "word", "pptx", "strategy_pdf"]
+    format: Literal["pdf", "docx", "pptx", "zip"]
+    scope: Optional[Literal["research", "strategy", "combined"]] = None
 
 
 class ChatMessage(BaseModel):
@@ -84,7 +72,7 @@ class ChatMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    scope: Literal["research", "strategy"]
+    scope: Literal["research", "strategy", "content"]
     messages: List[ChatMessage]
 
 
@@ -107,10 +95,9 @@ def _summary(d: dict) -> dict:
     }
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
 @api.get("/health")
 async def health():
-    return {"ok": True, "service": "move-backend", "agent": "gtm_v4_fixed"}
+    return {"ok": True, "service": "move-backend", "agent": "gtm_sequential"}
 
 
 @api.post("/runs")
@@ -139,102 +126,68 @@ async def delete_run(run_id: str):
     res = await runs.delete_one({"id": run_id})
     rdir = RUNS_DIR / run_id
     if rdir.exists():
-        for p in rdir.glob("*"):
-            try: p.unlink()
-            except OSError: pass
+        for p in rdir.rglob("*"):
+            if p.is_file():
+                try: p.unlink()
+                except OSError: pass
+        for p in sorted(rdir.rglob("*"), reverse=True):
+            if p.is_dir():
+                try: p.rmdir()
+                except OSError: pass
         try: rdir.rmdir()
         except OSError: pass
     return {"deleted": res.deleted_count}
 
 
-# ── HITL gates ────────────────────────────────────────────────────────────────
-@api.post("/runs/{run_id}/approve_research")
-async def approve_research(run_id: str, body: ApproveResearchRequest):
+# HITL gates - sequential
+def _safe_run(action, run_id: str):
     try:
-        wo.approve_research(run_id, run_strategy=body.run_strategy, run_content=body.run_content)
+        action(run_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@api.post("/runs/{run_id}/approve_research")
+async def approve_research(run_id: str):
+    _safe_run(wo.approve_research, run_id)
     return await get_run(run_id)
 
 
 @api.post("/runs/{run_id}/regenerate_research")
 async def regenerate_research(run_id: str):
-    try:
-        wo.regenerate_research(run_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    _safe_run(wo.regenerate_research, run_id)
     return await get_run(run_id)
 
 
 @api.post("/runs/{run_id}/approve_strategy")
 async def approve_strategy(run_id: str):
-    try:
-        wo.approve_strategy(run_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    _safe_run(wo.approve_strategy, run_id)
     return await get_run(run_id)
 
 
 @api.post("/runs/{run_id}/regenerate_strategy")
 async def regenerate_strategy(run_id: str):
-    try:
-        wo.regenerate_strategy(run_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    _safe_run(wo.regenerate_strategy, run_id)
     return await get_run(run_id)
 
 
-@api.post("/runs/{run_id}/approve_phase_a")
-async def approve_phase_a(run_id: str):
-    try:
-        wo.approve_phase_a(run_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+@api.post("/runs/{run_id}/approve_content")
+async def approve_content(run_id: str):
+    _safe_run(wo.approve_content, run_id)
     return await get_run(run_id)
 
 
-@api.post("/runs/{run_id}/regenerate_phase_a")
-async def regenerate_phase_a(run_id: str):
-    try:
-        wo.regenerate_phase_a(run_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+@api.post("/runs/{run_id}/regenerate_content")
+async def regenerate_content(run_id: str):
+    _safe_run(wo.regenerate_content, run_id)
     return await get_run(run_id)
 
 
-@api.post("/runs/{run_id}/phase_b")
-async def start_phase_b(run_id: str, body: PhaseBRequest):
-    try:
-        wo.start_phase_b(run_id, body.channels)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return await get_run(run_id)
-
-
-@api.post("/runs/{run_id}/approve_phase_b")
-async def approve_phase_b(run_id: str):
-    try:
-        wo.approve_phase_b(run_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return await get_run(run_id)
-
-
-@api.post("/runs/{run_id}/regenerate_phase_b")
-async def regenerate_phase_b(run_id: str):
-    try:
-        wo.regenerate_phase_b(run_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return await get_run(run_id)
-
-
-# ── Exports ───────────────────────────────────────────────────────────────────
+# Exports
 @api.post("/runs/{run_id}/export")
 async def export_run(run_id: str, body: ExportRequest):
-    rec = None
     try:
-        rec = wo.export(run_id, body.format)
+        rec = wo.export(run_id, body.format, body.scope)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
@@ -246,13 +199,18 @@ async def export_run(run_id: str, body: ExportRequest):
 async def get_file(run_id: str, filename: str):
     if not SAFE_FILE.match(filename):
         raise HTTPException(status_code=400, detail="Invalid filename")
-    p = RUNS_DIR / run_id / filename
-    if not p.exists():
+    # Search the run dir AND its first-level subdirs (pdf/, docx/, pptx/).
+    base = RUNS_DIR / run_id
+    candidates = [base / filename] + [d / filename for d in base.iterdir() if d.is_dir()] \
+        if base.exists() else []
+    p = next((c for c in candidates if c.exists()), None)
+    if not p:
         raise HTTPException(status_code=404, detail="File not found")
     media = {
-        ".pdf": "application/pdf",
+        ".pdf":  "application/pdf",
         ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".zip":  "application/zip",
     }.get(p.suffix.lower(), "application/octet-stream")
     return FileResponse(p, media_type=media, filename=filename)
 
@@ -271,7 +229,6 @@ async def chat_run(run_id: str, body: ChatRequest):
     return reply
 
 
-# ── Mount + CORS ──────────────────────────────────────────────────────────────
 app.include_router(api)
 app.add_middleware(
     CORSMiddleware,

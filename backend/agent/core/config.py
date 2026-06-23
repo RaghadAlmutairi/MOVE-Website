@@ -42,7 +42,7 @@ GOOGLE_API_KEY = load_secret("GOOGLE_API_KEY")           # search fallback #2 (C
 GOOGLE_CSE_ID = load_secret("GOOGLE_CSE_ID")             # Programmable Search Engine id (cx)
 assert OPENAI_API_KEY, "Set OPENAI_API_KEY (in your environment or a .env file)."
 if not TAVILY_API_KEY:
-    print("   \u26a0 TAVILY_API_KEY not set - search will fall back to Firecrawl / Google / DuckDuckGo.")
+    print("   [!] TAVILY_API_KEY not set - search will fall back to Firecrawl / Google / DuckDuckGo.")
 
 client = OpenAI(api_key=OPENAI_API_KEY, timeout=120.0, max_retries=2)
 
@@ -56,7 +56,7 @@ if ANTHROPIC_API_KEY:
     except Exception:
         anthropic_client = None
 else:
-    print("   \u26a0 ANTHROPIC_API_KEY not set - PPTX content enhancement will be skipped.")
+    print("   [!] ANTHROPIC_API_KEY not set - PPTX content enhancement will be skipped.")
 
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 
@@ -89,7 +89,7 @@ SOURCE_CHARS        = 26000
 RAW_CONTENT_CHARS   = 1400
 REQ_TIMEOUT         = (4, 12)
 
-print(f"\u2713 agent ready | plan={PLAN_MODEL} synth={SYNTH_MODEL} effort={SYNTH_EFFORT}")
+print(f"[OK] agent ready | plan={PLAN_MODEL} synth={SYNTH_MODEL} effort={SYNTH_EFFORT}")
 
 
 # --- Internal knowledge base (RAG) ---
@@ -144,4 +144,4 @@ def map_in_context(fn, items, max_workers):
 
 
 if TRACING_ENABLED:
-    print(f"\u2713 LangSmith tracing ON | project={os.environ.get('LANGCHAIN_PROJECT')}")
+    print(f"[OK] LangSmith tracing ON | project={os.environ.get('LANGCHAIN_PROJECT')}")

@@ -121,11 +121,11 @@ def search_with_fallback(query: str, max_results: int = RESULTS_PER_QUERY,
             res = fn()
             if res:
                 if i:
-                    print(f"        \u21b3 {name}: {len(res)} result(s)")
+                    print(f"        [->] {name}: {len(res)} result(s)")
                 return res
-            print(f"        \u21b3 {name} returned 0 results - trying next provider")
+            print(f"        [->] {name} returned 0 results - trying next provider")
         except Exception as e:
-            print(f"        \u21b3 {name} unavailable ({str(e)[:55]}) - trying next provider")
+            print(f"        [->] {name} unavailable ({str(e)[:55]}) - trying next provider")
     return []
 
 

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -41,16 +41,8 @@ export default function StrategyIdeation() {
   const [selectedId, setSelectedId] = useState(null);
   const [customIdea, setCustomIdea] = useState("");
 
-  const awaitingStrategy = status === "awaiting_strategy_approval" || status === "awaiting_strategy_and_phase_a_approval";
-  const stage2Running = status === "running" && run?.stage === "parallel";
-
-  // Auto-approve Phase A in the background — content drafts live in the backend only.
-  useEffect(() => {
-    const needsPhaseA = status === "awaiting_phase_a_approval" || status === "awaiting_strategy_and_phase_a_approval";
-    if (needsPhaseA && run?.id) {
-      api.approvePhaseA(run.id).catch(() => { /* surface errors via the run doc polling */ });
-    }
-  }, [status, run?.id]);
+  const awaitingStrategy = status === "awaiting_strategy_approval";
+  const strategyRunning = status === "running" && (run?.stage === "strategy" || run?.stage === "parallel");
 
   if (!run) {
     return <Shell><EmptyState title="No active run" desc="Run research first." cta="Start Research" onClick={() => navigate("/research")} /></Shell>;
@@ -71,13 +63,13 @@ export default function StrategyIdeation() {
           <p className="text-ink-muted mt-2 text-lg">Pick a strategic direction or describe your own — then approve.</p>
         </div>
         {awaitingStrategy && hasStrategy(result) && (
-          <Button onClick={async () => { try { await mutate(() => api.approveStrategy(run.id)); toast.success("Strategy approved"); navigate("/command-center"); } catch (e) { toast.error(e.message); } }} data-testid="quick-approve" size="lg" className="bg-brand-success hover:bg-[#0EA371] text-white text-base shadow-lg shadow-brand-success/30">
+          <Button onClick={async () => { try { await mutate(() => api.approveStrategy(run.id)); toast.success("Strategy approved", { description: "Generating content suite…" }); navigate("/studio"); } catch (e) { toast.error(e.message); } }} data-testid="quick-approve" size="lg" className="bg-move-success hover:opacity-90 text-white text-base shadow-lg">
             <CheckCircle2 className="w-5 h-5 mr-2" /> Approve & continue
           </Button>
         )}
       </div>
 
-      {stage2Running && <Banner kind="running" title="Strategy agent running…" desc="Composing positioning, ICP, channels and roadmap." />}
+      {strategyRunning && <Banner kind="running" title="Strategy agent running…" desc="Composing positioning, ICP, channels and roadmap." />}
       {status === "failed" && <Banner kind="failed" title="Pipeline failed" desc={run.error || "Try regenerating from Research."} />}
 
       {/* Section 1 — AI strategic ideas */}
@@ -133,10 +125,10 @@ export default function StrategyIdeation() {
           {strategy ? <Badge className="ml-3 bg-brand-success/15 text-brand-success border border-brand-success/40">Ready</Badge> : <Badge className="ml-3 bg-ink-elevated text-ink-muted border border-ink-border">Pending</Badge>}
           <div className="ml-3 h-px flex-1 bg-ink-border" />
         </div>
-        {!strategy && !stage2Running && (
+        {!strategy && !strategyRunning && (
           <div className="rounded-xl border border-dashed border-ink-border bg-ink-surface/30 p-6 text-sm text-ink-muted">Strategy was not generated for this run.</div>
         )}
-        {!strategy && stage2Running && <SkeletonCard />}
+        {!strategy && strategyRunning && <SkeletonCard />}
         {strategy && (
           <div className="rounded-2xl border border-ink-border bg-ink-surface p-7">
             <div className="text-xs uppercase tracking-wider text-ink-muted mb-2">North star</div>
@@ -155,7 +147,7 @@ export default function StrategyIdeation() {
                   <Button onClick={async () => { try { await mutate(() => api.regenerateStrategy(run.id)); toast.success("Regenerating strategy…"); } catch (e) { toast.error(e.message); } }} variant="outline" data-testid="regenerate-strategy" className="border-ink-border text-ink-text hover:bg-ink-surface">
                     <RefreshCw className="w-4 h-4 mr-1.5" /> Regenerate
                   </Button>
-                  <Button onClick={async () => { try { await mutate(() => api.approveStrategy(run.id)); toast.success("Strategy approved"); } catch (e) { toast.error(e.message); } }} data-testid="approve-strategy" className="bg-brand-success hover:bg-[#0EA371] text-white">
+                  <Button onClick={async () => { try { await mutate(() => api.approveStrategy(run.id)); toast.success("Strategy approved", { description: "Generating content suite…" }); } catch (e) { toast.error(e.message); } }} data-testid="approve-strategy" className="bg-move-success hover:opacity-90 text-white">
                     <CheckCircle2 className="w-4 h-4 mr-1.5" /> Approve strategy
                   </Button>
                 </>
@@ -170,14 +162,14 @@ export default function StrategyIdeation() {
         <ChatPanel scope={strategy ? "strategy" : "research"} />
       </section>
 
-      {(status === "ready_for_phase_b" || status === "awaiting_phase_b_approval" || status === "complete") && (
-        <div className="rounded-xl border border-brand-primary/40 bg-brand-primary/10 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {(status === "awaiting_content_approval" || status === "complete") && (
+        <div className="rounded-xl border border-move-grad-3/40 bg-move-grad-3-tint p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <div className="text-lg font-semibold text-ink-text">Strategy is locked in</div>
-            <div className="text-sm text-ink-muted">Open the Content Page to generate social posts and reports.</div>
+            <div className="text-lg font-semibold text-move-ink">Strategy is locked in</div>
+            <div className="text-sm text-move-body">Open the Content page to review the generated suite and download reports.</div>
           </div>
-          <Button onClick={() => navigate("/studio")} className="bg-brand-primary hover:bg-[#9333EA] text-white" data-testid="go-studio">
-            Open Studio <ArrowRight className="ml-2 w-4 h-4" />
+          <Button onClick={() => navigate("/studio")} className="bg-move-ink hover:bg-move-ink-hover text-white" data-testid="go-studio">
+            Open Content <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
         </div>
       )}

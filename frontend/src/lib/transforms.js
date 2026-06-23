@@ -78,30 +78,28 @@ export function getStrategyView(result) {
   };
 }
 
-// ── CONTENT (result.content_phase_a + result.content) ───────────────────────
+// ── CONTENT (result.content) ────────────────────────────────────────────────
+// Sequential flow: a single content bundle is produced after strategy approval.
 export function getContentView(result) {
-  const a = obj(obj(result).content_phase_a);
-  const b = obj(obj(result).content);
-  const merged = {
-    positioning_line: b.positioning_line || a.positioning_line || "",
-    messaging_pillars: arr(b.messaging_pillars || a.messaging_pillars),
-    // Phase A always exposes linkedin_posts. Phase B may add more.
-    linkedin: arr(b.linkedin_posts && b.linkedin_posts.length ? b.linkedin_posts : a.linkedin_posts),
-    blogs: arr(b.blog_drafts),
-    emails: arr(b.email_drafts),
+  const c = obj(obj(result).content);
+  return {
+    positioning_line: c.positioning_line || "",
+    messaging_pillars: arr(c.messaging_pillars),
+    linkedin: arr(c.linkedin_posts),
+    blogs: arr(c.blog_drafts),
+    seo: arr(c.seo_articles),
+    emails: arr(c.email_drafts),
   };
-  return merged;
 }
 
 export function hasStrategy(result) {
   const g = obj(obj(result).gtm_strategy);
   return !!(g.foundation || g.activation || g.execution);
 }
-export function hasPhaseA(result) {
-  const a = obj(obj(result).content_phase_a);
-  return arr(a.linkedin_posts).length > 0;
-}
-export function hasPhaseB(result) {
-  const b = obj(obj(result).content);
-  return arr(b.linkedin_posts).length > 0 || arr(b.blog_drafts).length > 0 || arr(b.email_drafts).length > 0;
+export function hasContent(result) {
+  const c = obj(obj(result).content);
+  return arr(c.linkedin_posts).length > 0
+      || arr(c.blog_drafts).length > 0
+      || arr(c.seo_articles).length > 0
+      || arr(c.email_drafts).length > 0;
 }
