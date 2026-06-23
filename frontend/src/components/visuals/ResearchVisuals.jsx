@@ -52,7 +52,7 @@ export function SWOTMatrix({ swot }) {
     </Section>
   );
 }
-function SwotQuadrant({ label, items, tone, icon: Icon, key }) {
+function SwotQuadrant({ label, items, tone, icon: Icon }) {
   const cls = tone === "success" ? "border-move-success/30 bg-move-success-bg"
             : tone === "error"   ? "border-move-error/30 bg-move-error-bg"
             : tone === "warn"    ? "border-move-warning/30 bg-move-warning-bg"
@@ -204,8 +204,8 @@ function PersonaCard({ persona, index }) {
           <Users className="w-5 h-5 text-move-grad-2" />
         </span>
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-medium text-move-ink leading-tight" style={{ fontWeight: 500 }}>{p.persona_name || `Persona ${index + 1}`}</h3>
-          {p.role_title && <div className="text-sm text-move-body mt-0.5">{p.role_title}</div>}
+          <h3 className="text-base font-medium text-move-ink leading-tight" style={{ fontWeight: 500 }}>{stripCitations(p.persona_name) || `Persona ${index + 1}`}</h3>
+          {p.role_title && <div className="text-sm text-move-body mt-0.5">{stripCitations(p.role_title)}</div>}
           {p.segment && <div className="text-xs text-move-muted mt-1 leading-relaxed">{stripCitations(p.segment)}</div>}
         </div>
         {p.decision_power && p.decision_power !== "UNKNOWN" && (
