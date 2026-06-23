@@ -205,7 +205,7 @@ function ChannelsTab({ v, channelData }) {
       {channelData.length > 0 && (
         <div className="rounded-2xl border border-move-border bg-move-surface p-6 mb-5">
           <div className="text-sm uppercase tracking-wider text-move-muted mb-3">Investment weight (Low / Medium / High)</div>
-          <div className="h-48"><InvestmentChart data={channelData} layout="vertical" /></div>
+          <div className="h-72"><InvestmentChart data={channelData} layout="vertical" /></div>
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -325,6 +325,23 @@ function MetricsTab({ v }) {
 }
 
 // ── Chart ───────────────────────────────────────────────────────────────────
+// Custom Y-axis tick — renders the label horizontally on a single line and
+// truncates with an ellipsis so long channel names (e.g. "App Store, Carrier
+// Reseller (MDM/VAR)") never wrap into vertical text.
+function YTick({ x, y, payload }) {
+  const max = 28;
+  const raw = String(payload?.value ?? "");
+  const text = raw.length > max ? `${raw.slice(0, max - 1)}…` : raw;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <title>{raw}</title>
+      <text x={-8} y={0} dy={4} textAnchor="end" fill="var(--color-muted)" fontSize={12}>
+        {text}
+      </text>
+    </g>
+  );
+}
+
 function InvestmentChart({ data, layout }) {
   // Tooltip styled for the cream theme.
   const tipStyle = { background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 13, color: "var(--color-ink)" };
@@ -334,12 +351,12 @@ function InvestmentChart({ data, layout }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       {layout === "vertical" ? (
-        <BarChart data={data} layout="vertical" margin={{ left: 90, right: 12 }}>
-          <CartesianGrid stroke={grid} strokeDasharray="3 3" />
+        <BarChart data={data} layout="vertical" margin={{ left: 12, right: 24, top: 8, bottom: 8 }}>
+          <CartesianGrid stroke={grid} strokeDasharray="3 3" horizontal={false} />
           <XAxis type="number" stroke={axis} fontSize={12} domain={[0, 3]} ticks={[1, 2, 3]} tickFormatter={(val) => ["", "Low", "Med", "High"][val] || ""} />
-          <YAxis dataKey="name" type="category" stroke={axis} fontSize={13} />
+          <YAxis dataKey="name" type="category" width={220} interval={0} tickLine={false} axisLine={false} tick={<YTick />} />
           <Tooltip contentStyle={tipStyle} formatter={fmt} />
-          <Bar dataKey="weight" radius={[0, 6, 6, 0]}>
+          <Bar dataKey="weight" radius={[0, 6, 6, 0]} barSize={20}>
             {data.map((c) => <Cell key={c.name} fill={c.color} />)}
           </Bar>
         </BarChart>
