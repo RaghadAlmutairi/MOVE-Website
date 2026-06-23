@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
-  SWOTGrid, PositioningCanvas, MessagingPyramid, StrategicPriorities,
-} from "@/components/visuals/Visuals";
+  PositioningPanel, ICPPanel, CompetitiveEdgeTable, PricingPanel, MotionPanel,
+  ChannelPlaysTable, MessagingByPersonaList, ContentEnginePanel, SalesPlaybookPanel,
+  DemandGenPanel, MetricsPanel, RoadmapPanel, RisksTable,
+} from "@/components/visuals/StrategyVisuals";
 import { useRun } from "@/lib/RunContext";
 import { api } from "@/lib/api";
 import { getStrategyView, getReportView, hasStrategy } from "@/lib/transforms";
@@ -45,33 +47,16 @@ export default function StrategyIdeation() {
   if (status === "awaiting_strategy_direction")
     return <Shell><EmptyState title="Pick a strategy direction" desc="Choose an AI-suggested direction or describe your own GTM objective to launch the strategy agent." cta="Choose direction" onClick={() => navigate("/strategy-direction")} /></Shell>;
 
-  const edge0 = strategy && (strategy.foundation.competitiveEdges || [])[0];
-  const edgeText = (e) => typeof e === "string" ? e : (e?.against || e?.competitor || e?.label || e?.sharpest_message || e?.edge || "");
-  const positioning = strategy && {
-    statement: strategy.foundation.positioning,
-    for_audience: strategy.foundation.icp?.title || strategy.foundation.icp?.segment,
-    who_need: (strategy.foundation.topPains || [])[0],
-    our_product: report?.title || run?.query,
-    provides: strategy.foundation.slot?.value,
-    unlike: edgeText(edge0),
-    differentiator: strategy.foundation.slot?.differentiator,
-  };
-
-  const messaging = strategy && {
-    value_prop: strategy.northStar,
-    pillars: (strategy.activation.messagingByPersona || []).slice(0, 3).map((p) => ({
-      label: p.persona || p.name || "Persona",
-      description: p.headline || p.message || "",
-    })),
-    proofs: (strategy.foundation.competitiveEdges || []).map(edgeText).filter(Boolean),
-  };
-
-  const priorities = (strategy?.execution?.roadmap || []).map((r, i) => ({
-    label: r.theme || r.title || `Sprint ${i + 1}`,
-    description: r.summary || r.description || (Array.isArray(r.actions) ? r.actions.join(" · ") : ""),
-    kpis: r.kpis || r.metrics,
-    owner: r.owner,
-  }));
+  const positioningStatement = strategy?.foundation?.positioning || "";
+  const slot = strategy?.foundation?.slot || {};
+  // Summary card targets — show ONLY values the agent produced.
+  const summaryTarget = strategy?.foundation?.icp?.title
+                     || strategy?.foundation?.icp?.segment
+                     || strategy?.foundation?.icp?.primary_segment
+                     || slot.for_who
+                     || "";
+  const summaryPositioningLine = positioningStatement || slot.promise || "";
+  const summaryMotion = strategy?.activation?.motion?.primary || "";
 
   return (
     <Shell>
@@ -110,10 +95,9 @@ export default function StrategyIdeation() {
               from here without ever expanding the sections. */}
           <StrategySummaryCard
             northStar={strategy.northStar}
-            positioningLine={positioning?.statement || strategy.foundation.positioning}
-            targetSegment={strategy.foundation.icp?.title || strategy.foundation.icp?.segment}
-            primaryMotion={strategy.activation?.motion?.primary || strategy.activation?.primary_motion}
-            priorityTitles={priorities.slice(0, 4).map((p) => p.label)}
+            positioningLine={summaryPositioningLine}
+            targetSegment={summaryTarget}
+            primaryMotion={summaryMotion}
             chosenDirection={chosenDirection}
             awaitingStrategy={awaitingStrategy}
             onApprove={async () => { try { await mutate(() => api.approveStrategy(run.id)); toast.success("Strategy approved", { description: "Generating content suite…" }); navigate("/studio"); } catch (e) { toast.error(e.message); } }}
@@ -124,48 +108,12 @@ export default function StrategyIdeation() {
             }}
           />
 
-          {/* ── Full strategy ─ collapsible accordion ──────────────── */}
-          <section id="strategy-full" className="mt-10" data-testid="strategy-full">
-            <div className="flex items-center gap-2 mb-4">
-              <FlagTriangleRight className="w-5 h-5 text-move-ink" />
-              <h2 className="text-xl font-medium text-move-ink" style={{ fontWeight: 500 }}>Full strategy</h2>
-              <div className="ml-3 h-px flex-1 bg-move-border" />
-              <button
-                onClick={() => setFullOpen(fullOpen.length === 4 ? [] : ["positioning", "swot", "messaging", "priorities"])}
-                data-testid="strategy-toggle-all"
-                className="text-xs text-move-muted hover:text-move-ink"
-              >
-                {fullOpen.length === 4 ? "Collapse all" : "Expand all"}
-              </button>
-            </div>
-
-            <Accordion type="multiple" value={fullOpen} onValueChange={setFullOpen} className="space-y-3">
-              <AccordionSection id="positioning" title="Positioning canvas" icon={Target}>
-                <PositioningCanvas positioning={positioning} />
-              </AccordionSection>
-
-              {(report?.swot && (report.swot.strengths.length || report.swot.weaknesses.length)) > 0 && (
-                <AccordionSection id="swot" title="SWOT" icon={AlertTriangle}>
-                  <SWOTGrid swot={{
-                    strengths:     report.swot.strengths.map((s) => s.point || s),
-                    weaknesses:    report.swot.weaknesses.map((s) => s.point || s),
-                    opportunities: report.swot.opportunities.map((s) => s.point || s),
-                    threats:       report.swot.threats.map((s) => s.point || s),
-                  }} />
-                </AccordionSection>
-              )}
-
-              <AccordionSection id="messaging" title="Messaging pyramid" icon={Sparkles}>
-                <MessagingPyramid messaging={messaging} />
-              </AccordionSection>
-
-              {priorities.length > 0 && (
-                <AccordionSection id="priorities" title="Strategic priorities (90-day plan)" icon={CheckCircle2}>
-                  <StrategicPriorities priorities={priorities} />
-                </AccordionSection>
-              )}
-            </Accordion>
-          </section>
+          {/* ── Full strategy — real agent sections only ─ */}
+          <FullStrategyAccordion
+            strategy={strategy}
+            fullOpen={fullOpen}
+            setFullOpen={setFullOpen}
+          />
 
           {(status === "awaiting_content_approval" || status === "complete") && (
             <div className="mt-8 rounded-[16px] border border-move-grad-3/40 bg-move-grad-3-tint p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -194,8 +142,90 @@ export default function StrategyIdeation() {
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+// Each entry only mounts an Accordion item when the underlying data exists,
+// so the user never sees an empty / fabricated section.
+function FullStrategyAccordion({ strategy, fullOpen, setFullOpen }) {
+  const f = strategy.foundation || {};
+  const a = strategy.activation || {};
+  const x = strategy.execution || {};
+
+  const sections = [
+    { id: "positioning",  title: "Positioning",         icon: Target,
+      visible: !!(f.positioning || (f.slot && Object.keys(f.slot).length)),
+      body: () => <PositioningPanel positioning={f.positioning} slot={f.slot} /> },
+    { id: "icp",          title: "Ideal customer profile", icon: Compass,
+      visible: !!(f.icp && Object.keys(f.icp).length) || f.topPains?.length || f.triggers?.length || f.disqualifiers?.length || f.secondarySegments?.length || (f.beachhead && Object.keys(f.beachhead).length),
+      body: () => <ICPPanel icp={f.icp} topPains={f.topPains} triggers={f.triggers}
+                            disqualifiers={f.disqualifiers} secondarySegments={f.secondarySegments}
+                            beachhead={f.beachhead} /> },
+    { id: "edge",         title: "Competitive edge",    icon: AlertTriangle,
+      visible: !!(f.competitiveEdges && f.competitiveEdges.length),
+      body: () => <CompetitiveEdgeTable edges={f.competitiveEdges} /> },
+    { id: "pricing",      title: "Offer & pricing",     icon: Sparkles,
+      visible: !!(a.pricing && (a.pricing.packaging || a.pricing.anchor || (a.pricing.tiers || []).length)),
+      body: () => <PricingPanel pricing={a.pricing} /> },
+    { id: "motion",       title: "GTM motion",          icon: FlagTriangleRight,
+      visible: !!(a.motion && (a.motion.primary || a.motion.secondary || a.motion.rationale || (a.motion.risks || []).length)),
+      body: () => <MotionPanel motion={a.motion} /> },
+    { id: "channels",     title: "Channel plays",       icon: Sparkles,
+      visible: !!(a.channelPlays && a.channelPlays.length),
+      body: () => <ChannelPlaysTable plays={a.channelPlays} /> },
+    { id: "messaging",    title: "Messaging by persona", icon: Sparkles,
+      visible: !!(a.messagingByPersona && a.messagingByPersona.length),
+      body: () => <MessagingByPersonaList list={a.messagingByPersona} /> },
+    { id: "content",      title: "Content engine",      icon: Sparkles,
+      visible: !!(a.contentEngine && Object.keys(a.contentEngine).length),
+      body: () => <ContentEnginePanel engine={a.contentEngine} /> },
+    { id: "sales",        title: "Sales playbook",      icon: Compass,
+      visible: !!(x.salesPlaybook && (x.salesPlaybook.qualification || (x.salesPlaybook.stages || []).length)),
+      body: () => <SalesPlaybookPanel playbook={x.salesPlaybook} /> },
+    { id: "demand",       title: "Demand-gen mix",      icon: Sparkles,
+      visible: !!(x.demandGen && Object.keys(x.demandGen).length),
+      body: () => <DemandGenPanel demand={x.demandGen} /> },
+    { id: "metrics",      title: "Metrics & north star", icon: CheckCircle2,
+      visible: !!(strategy.northStar || (x.metrics && Object.keys(x.metrics).length)),
+      body: () => <MetricsPanel metrics={x.metrics} northStar={strategy.northStar} /> },
+    { id: "roadmap",      title: "90-day execution roadmap", icon: FlagTriangleRight,
+      visible: !!(x.roadmap && x.roadmap.length),
+      body: () => <RoadmapPanel phases={x.roadmap} /> },
+    { id: "risks",        title: "Strategic risks & mitigations", icon: AlertTriangle,
+      visible: !!(x.risks && x.risks.length),
+      body: () => <RisksTable risks={x.risks} /> },
+  ].filter((s) => s.visible);
+
+  const allIds = sections.map((s) => s.id);
+  const allOpen = fullOpen.length === allIds.length && allIds.every((id) => fullOpen.includes(id));
+
+  return (
+    <section id="strategy-full" className="mt-10" data-testid="strategy-full">
+      <div className="flex items-center gap-2 mb-4">
+        <FlagTriangleRight className="w-5 h-5 text-move-ink" />
+        <h2 className="text-xl font-medium text-move-ink" style={{ fontWeight: 500 }}>Full strategy</h2>
+        <span className="text-xs text-move-muted">({sections.length} sections)</span>
+        <div className="ml-3 h-px flex-1 bg-move-border" />
+        <button
+          onClick={() => setFullOpen(allOpen ? [] : allIds)}
+          data-testid="strategy-toggle-all"
+          className="text-xs text-move-muted hover:text-move-ink"
+        >
+          {allOpen ? "Collapse all" : "Expand all"}
+        </button>
+      </div>
+
+      <Accordion type="multiple" value={fullOpen} onValueChange={setFullOpen} className="space-y-3">
+        {sections.map((sec) => (
+          <AccordionSection key={sec.id} id={sec.id} title={sec.title} icon={sec.icon}>
+            {sec.body()}
+          </AccordionSection>
+        ))}
+      </Accordion>
+    </section>
+  );
+}
+
 function StrategySummaryCard({ northStar, positioningLine, targetSegment, primaryMotion,
-                               priorityTitles, chosenDirection, awaitingStrategy,
+                               chosenDirection, awaitingStrategy,
                                onApprove, onRegenerate, onOpenFull }) {
   return (
     <section className="mb-10 rounded-[20px] border border-move-grad-3/40 bg-gradient-to-br from-move-grad-1-tint via-move-surface to-move-grad-3-tint p-7 md:p-9"
@@ -235,19 +265,8 @@ function StrategySummaryCard({ northStar, positioningLine, targetSegment, primar
         )}
       </div>
 
-      {priorityTitles.length > 0 && (
-        <div className="mb-6">
-          <div className="text-[11px] uppercase tracking-wider text-move-muted font-medium mb-2" style={{ fontWeight: 500 }}>Top priorities</div>
-          <ol className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {priorityTitles.map((t, i) => (
-              <li key={i} className="flex gap-2 text-sm text-move-ink leading-snug">
-                <span className="shrink-0 w-5 h-5 rounded-md bg-move-ink text-white flex items-center justify-center text-[10px] font-medium mt-0.5" style={{ fontWeight: 500 }}>{i + 1}</span>
-                <span>{t}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
+      {/* "Top priorities" intentionally omitted — only data from the agent
+          output is shown here. The roadmap phases live in the Accordion. */}
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-move-border">
         <Button variant="ghost" onClick={onOpenFull} data-testid="summary-open-full"
