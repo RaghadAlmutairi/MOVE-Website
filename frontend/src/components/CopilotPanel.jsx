@@ -89,6 +89,7 @@ function CopilotInner({ stage, onCollapse }) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Reset intro when stage (route) changes — keep the panel context-aware.
   useEffect(() => {
@@ -105,8 +106,12 @@ function CopilotInner({ stage, onCollapse }) {
   ].includes(run?.status);
 
   const send = async (override) => {
-    const text = (override ?? input).trim();
+    // Fall back to DOM value when controlled state hasn't flushed yet
+    // (e.g. when programmatic typing+clicking happens in the same tick).
+    const fallback = inputRef.current?.value || "";
+    const text = (override ?? input ?? fallback).trim() || fallback.trim();
     if (!text || sending) return;
+    if (inputRef.current) inputRef.current.value = "";
     if (!runId) {
       setMessages((m) => [...m, { id: `u-${Date.now()}`, role: "user", content: text },
         { id: `a-${Date.now()}`, role: "assistant", content: "Start a run from the Research stage and I'll join you here with the data." }]);
@@ -179,13 +184,13 @@ function CopilotInner({ stage, onCollapse }) {
       </div>
 
       <div className="p-3 border-t border-move-border flex items-center gap-2">
-        <Input value={input} onChange={(e) => setInput(e.target.value)}
+        <Input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)}
                onKeyDown={(e) => e.key === "Enter" && send()}
                placeholder={ready ? "Ask the assistant…" : "Waiting for run data…"}
                disabled={sending}
                data-testid={`copilot-input-${stage}`}
                className="bg-move-bg border-move-border text-move-ink rounded-[10px]" />
-        <Button onClick={() => send()} disabled={sending || !input.trim()}
+        <Button onClick={() => send()} disabled={sending}
                 data-testid={`copilot-send-${stage}`}
                 className="bg-move-ink hover:bg-move-ink-hover text-white rounded-[10px] h-10 w-10 p-0">
           {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

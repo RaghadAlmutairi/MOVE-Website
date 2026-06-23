@@ -10,6 +10,17 @@ import {
 const safeArr = (v) => (Array.isArray(v) ? v : []);
 const safeStr = (v) => (typeof v === "string" ? v : "");
 const safeObj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+// Coerce ANY value (string / number / object / array) to a renderable string.
+// This protects the UI from heterogeneous LLM JSON shapes.
+const toText = (v) => {
+  if (v === null || v === undefined || v === false) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (Array.isArray(v)) return v.map(toText).filter(Boolean).join(", ");
+  // Object: try common label-like keys, otherwise stringify a short summary.
+  const o = v;
+  return o.label || o.title || o.name || o.point || o.text || o.value || o.summary || o.description || "";
+};
 
 // ───────────────────────────────────────────────────────────────────────────────
 // EXECUTIVE SUMMARY — top-of-page key takeaways for either Research or Strategy
@@ -45,7 +56,7 @@ export function ExecutiveSummary({ kind = "research", insights = [], opportuniti
               {c.items.slice(0, 4).map((it, i) => (
                 <li key={i} className="text-sm text-move-body leading-relaxed flex gap-2">
                   <span className="text-move-grad-2 shrink-0">•</span>
-                  <span>{typeof it === "string" ? it : it?.label || it?.title || it?.name || ""}</span>
+                  <span>{toText(it)}</span>
                 </li>
               ))}
             </ul>
@@ -130,7 +141,7 @@ function PillRow({ label, items, accent = "grad" }) {
       <div className="text-[11px] uppercase tracking-wider text-move-muted mb-1">{label}</div>
       <div className="flex flex-wrap gap-1.5">
         {items.map((s, i) => (
-          <span key={i} className={`text-xs px-2 py-0.5 rounded-full border ${cls}`}>{typeof s === "string" ? s : (s?.label || "")}</span>
+          <span key={i} className={`text-xs px-2 py-0.5 rounded-full border ${cls}`}>{toText(s)}</span>
         ))}
       </div>
     </div>
@@ -167,7 +178,7 @@ export function CompetitorMatrix({ competitors = [] }) {
                   <BulletList items={o.weaknesses} accent="error" />
                 </td>
                 <td className="px-4 py-3 align-top text-move-body">
-                  {o.positioning || o.summary || "—"}
+                  {toText(o.positioning || o.summary) || "—"}
                 </td>
               </tr>
             );
@@ -187,7 +198,7 @@ function BulletList({ items, accent }) {
       {list.map((s, i) => (
         <li key={i} className="text-move-body flex gap-1.5">
           <span className={`shrink-0 ${dot}`}>•</span>
-          <span className="leading-snug">{typeof s === "string" ? s : (s?.label || "")}</span>
+          <span className="leading-snug">{toText(s)}</span>
         </li>
       ))}
     </ul>
@@ -259,12 +270,12 @@ function SwotTile({ label, icon: Icon, tone, items }) {
 export function PositioningCanvas({ positioning }) {
   const o = safeObj(positioning);
   const blocks = [
-    { label: "For",            value: o.for_audience || o.audience || "—" },
-    { label: "Who",            value: o.who_need || o.need || "—" },
-    { label: "Our",            value: o.our_product || o.product || "—" },
-    { label: "Provides",       value: o.provides || o.benefit || "—" },
-    { label: "Unlike",         value: o.unlike || o.alternative || "—" },
-    { label: "Our product",    value: o.differentiator || o.unique || "—" },
+    { label: "For",            value: toText(o.for_audience || o.audience) || "—" },
+    { label: "Who",            value: toText(o.who_need || o.need) || "—" },
+    { label: "Our",            value: toText(o.our_product || o.product) || "—" },
+    { label: "Provides",       value: toText(o.provides || o.benefit) || "—" },
+    { label: "Unlike",         value: toText(o.unlike || o.alternative) || "—" },
+    { label: "Our product",    value: toText(o.differentiator || o.unique) || "—" },
   ];
   return (
     <div className="rounded-[16px] border border-move-border bg-move-surface p-5" data-testid="positioning-canvas">
@@ -297,7 +308,7 @@ export function MessagingPyramid({ messaging }) {
       {headline && (
         <div className="rounded-[12px] bg-gradient-to-r from-move-grad-1 via-move-grad-2 to-move-grad-3 text-white p-5 text-center">
           <div className="text-[11px] uppercase tracking-wider opacity-80 mb-1.5">Headline value prop</div>
-          <p className="text-lg font-medium leading-snug" style={{ fontWeight: 500 }}>{headline}</p>
+          <p className="text-lg font-medium leading-snug" style={{ fontWeight: 500 }}>{toText(headline)}</p>
         </div>
       )}
       {pillars.length > 0 && (
@@ -307,8 +318,8 @@ export function MessagingPyramid({ messaging }) {
             return (
               <div key={i} className="rounded-[12px] border border-move-border bg-move-bg-subtle p-4">
                 <div className="text-[11px] uppercase tracking-wider text-move-grad-2 font-medium mb-1" style={{ fontWeight: 500 }}>Pillar {i + 1}</div>
-                <div className="text-sm font-medium text-move-ink" style={{ fontWeight: 500 }}>{obj.label || obj.title || obj.name || ""}</div>
-                {obj.description && <div className="text-sm text-move-body mt-1 leading-relaxed">{obj.description}</div>}
+                <div className="text-sm font-medium text-move-ink" style={{ fontWeight: 500 }}>{toText(obj.label || obj.title || obj.name)}</div>
+                {obj.description && <div className="text-sm text-move-body mt-1 leading-relaxed">{toText(obj.description)}</div>}
               </div>
             );
           })}
@@ -319,7 +330,7 @@ export function MessagingPyramid({ messaging }) {
           <div className="text-[11px] uppercase tracking-wider text-move-muted mb-2">Proof points</div>
           <div className="flex flex-wrap gap-1.5">
             {proofs.slice(0, 8).map((p, i) => (
-              <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-move-bg-subtle border border-move-border text-move-body">{typeof p === "string" ? p : (p?.label || "")}</span>
+              <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-move-bg-subtle border border-move-border text-move-body">{toText(p)}</span>
             ))}
           </div>
         </div>
@@ -341,12 +352,12 @@ export function StrategicPriorities({ priorities = [] }) {
               {String(i + 1).padStart(2, "0")}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-base font-medium text-move-ink" style={{ fontWeight: 500 }}>{o.label || o.title || o.name || ""}</div>
-              {o.description && <p className="text-sm text-move-body mt-1 leading-relaxed">{o.description}</p>}
+              <div className="text-base font-medium text-move-ink" style={{ fontWeight: 500 }}>{toText(o.label || o.title || o.name)}</div>
+              {o.description && <p className="text-sm text-move-body mt-1 leading-relaxed">{toText(o.description)}</p>}
               {Array.isArray(o.kpis) && o.kpis.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {o.kpis.slice(0, 4).map((k, j) => (
-                    <span key={j} className="text-[11px] px-2 py-0.5 rounded-full bg-move-grad-2-tint text-move-grad-2 border border-move-grad-2/30">{typeof k === "string" ? k : (k?.label || "")}</span>
+                    <span key={j} className="text-[11px] px-2 py-0.5 rounded-full bg-move-grad-2-tint text-move-grad-2 border border-move-grad-2/30">{toText(k)}</span>
                   ))}
                 </div>
               )}

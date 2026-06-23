@@ -152,8 +152,8 @@ export default function ContentStudio() {
         </div>
       )}
 
-      {/* Groups */}
-      {groups.filter((g) => g.items.length > 0).map((g) => (
+      {/* Groups — always render all 4 channels so testids stay stable. */}
+      {groups.map((g) => (
         <section key={g.key} className="mb-8" data-testid={`content-group-${g.key}`}>
           <div className="flex items-center gap-2 mb-3">
             <g.Icon className="w-5 h-5 text-move-ink" />
@@ -161,18 +161,24 @@ export default function ContentStudio() {
             <span className="text-sm text-move-muted">({g.items.length})</span>
             <div className="ml-3 h-px flex-1 bg-move-border" />
           </div>
-          <div className="space-y-3">
-            {g.items.map((it) => (
-              <ExpandableContentCard
-                key={it.id}
-                heading={it.heading}
-                meta={it.meta}
-                body={it.body}
-                footer={it.footer}
-                testId={`${g.key}-card-${it.id}`}
-              />
-            ))}
-          </div>
+          {g.items.length > 0 ? (
+            <div className="space-y-3">
+              {g.items.map((it) => (
+                <ExpandableContentCard
+                  key={it.id}
+                  heading={it.heading}
+                  meta={it.meta}
+                  body={it.body}
+                  footer={it.footer}
+                  testId={`${g.key}-card-${it.id}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[16px] border border-dashed border-move-border bg-move-bg-subtle/60 p-5 text-sm text-move-muted text-center" data-testid={`content-empty-${g.key}`}>
+              No {g.label.toLowerCase()} were generated for this run.
+            </div>
+          )}
         </section>
       ))}
 

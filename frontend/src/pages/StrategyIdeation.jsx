@@ -33,13 +33,15 @@ export default function StrategyIdeation() {
   if (status === "awaiting_research_approval")
     return <Shell><EmptyState title="Approve research first" desc="The strategy agent only runs after you approve the research." cta="Review research" onClick={() => navigate("/research")} /></Shell>;
 
+  const edge0 = strategy && (strategy.foundation.competitiveEdges || [])[0];
+  const edgeText = (e) => typeof e === "string" ? e : (e?.against || e?.competitor || e?.label || e?.sharpest_message || e?.edge || "");
   const positioning = strategy && {
     statement: strategy.foundation.positioning,
     for_audience: strategy.foundation.icp?.title || strategy.foundation.icp?.segment,
     who_need: (strategy.foundation.topPains || [])[0],
     our_product: report?.title || run?.query,
     provides: strategy.foundation.slot?.value,
-    unlike: (strategy.foundation.competitiveEdges || [])[0]?.against || (strategy.foundation.competitiveEdges || [])[0],
+    unlike: edgeText(edge0),
     differentiator: strategy.foundation.slot?.differentiator,
   };
 
@@ -49,7 +51,7 @@ export default function StrategyIdeation() {
       label: p.persona || p.name || "Persona",
       description: p.headline || p.message || "",
     })),
-    proofs: strategy.foundation.competitiveEdges?.map((e) => (typeof e === "string" ? e : (e.label || e.edge || ""))) || [],
+    proofs: (strategy.foundation.competitiveEdges || []).map(edgeText).filter(Boolean),
   };
 
   const priorities = (strategy?.execution?.roadmap || []).map((r, i) => ({
