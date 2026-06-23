@@ -1,246 +1,401 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  ArrowRight, PlayCircle, Search, Target, TrendingUp, LayoutPanelTop, PenSquare, Download, Brain,
+  ArrowRight, ArrowUpRight, Sparkles, ShieldCheck, FileSearch, Compass, MessageSquare, Download,
+  GitBranch, BookOpen, Quote, CheckCircle2,
 } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-// Every feature listed below maps to a real capability of gtm_v4_fixed.
-const FEATURES = [
-  { icon: Search,         title: "Research Agent",         desc: "Routes the right research tools, gathers sources in parallel, and synthesises a Report with SWOT, competitors, personas and trends." },
-  { icon: Target,         title: "Competitor Discovery",   desc: "Discovers company, product and alternative competitors with positioning, value props and product-level differentiators." },
-  { icon: TrendingUp,     title: "Market & Trends",        desc: "Surfaces market trends, opportunities and risks grounded in cited sources." },
-  { icon: LayoutPanelTop, title: "Strategy Agent",         desc: "Generates a full GTM strategy: foundation (positioning, ICP, beachhead), activation (pricing, motion, channels) and execution (sales playbook, demand gen, 90-day roadmap)." },
-  { icon: PenSquare,      title: "Content Agent",          desc: "Generates the full content suite — LinkedIn posts, blog drafts, SEO articles and email sequences — grounded in the approved research and GTM strategy." },
-  { icon: Download,       title: "Document Exports",       desc: "Three PDFs and three Word docs (research, strategy, combined) plus a strategy PowerPoint — or grab everything as a single ZIP kit." },
+const LOGO = "https://customer-assets.emergentagent.com/job_gtm-copilot-2/artifacts/mhxfp8wp_ChatGPT%20Image%20Jun%2023%2C%202026%2C%2001_40_21%20PM.png";
+
+// Marquee chips — short, declarative, premium claims.
+const MARQUEE = [
+  "Source-grounded reports", "Sequential agent pipeline", "Human-in-the-loop gates",
+  "Strategy decks ready in minutes", "Audit-ready evidence", "Zero hallucination drift",
 ];
 
+// Three product pillars — concrete capabilities, not vague benefits.
+const PILLARS = [
+  {
+    eyebrow: "01",
+    title: "Research that cites its work",
+    body: "Multi-agent retrieval gathers competitor intel, personas, and market trends, then synthesises a report that lists every source it used. Reviewers can trace any claim in two clicks.",
+    Icon: FileSearch,
+  },
+  {
+    eyebrow: "02",
+    title: "Strategy with provenance",
+    body: "Positioning, ICP, motion, channels, and a 90-day roadmap — generated only after you choose a direction or describe your own. Every recommendation maps back to the research.",
+    Icon: Compass,
+  },
+  {
+    eyebrow: "03",
+    title: "Content the system already trusts",
+    body: "LinkedIn posts, blogs, SEO articles, and email sequences — drafted from the approved strategy, packaged into a ZIP your team can ship the same day.",
+    Icon: MessageSquare,
+  },
+];
+
+// Five-step workflow, presented as a ribbon timeline.
 const STEPS = [
-  { n: "01", t: "Query",          d: "Submit your research question and company URL to start the GTM pipeline." },
-  { n: "02", t: "Research",       d: "AI agents gather market insights, competitors, and customer personas with cited sources." },
-  { n: "03", t: "Strategy",       d: "Generate positioning, ICP, pricing, channels, and a 90-day execution roadmap." },
-  { n: "04", t: "Content",        d: "Create LinkedIn posts, blogs, SEO articles, and email sequences aligned with your strategy." },
-  { n: "05", t: "Export",         d: "Download PDF, Word, and PowerPoint deliverables with all research and strategy artifacts." },
+  { n: "01", t: "Query",     d: "A company, a URL, an intent. That's all we need to start." },
+  { n: "02", t: "Research",  d: "Agents route the right tools and gather evidence in parallel." },
+  { n: "03", t: "Direction", d: "Pick a strategic angle — AI suggestion or your own brief." },
+  { n: "04", t: "Strategy",  d: "Positioning, ICP, motion, 90-day plan — fully cited." },
+  { n: "05", t: "Ship",      d: "PDFs, decks, ZIP kit. Hand off to revenue the same day." },
+];
+
+const CAPABILITIES = [
+  { Icon: FileSearch,   t: "Source-cited research",      d: "SWOT, opportunities, risks, competitors, personas — every artefact rooted in the agent's evidence." },
+  { Icon: GitBranch,    t: "Direction gate",             d: "Pick an AI-suggested strategic direction or write your own GTM objective before generating the strategy." },
+  { Icon: Compass,      t: "Full GTM strategy",          d: "Positioning, slot statement, beachhead, competitive edge, pricing, motion, channels, messaging, 90-day plan." },
+  { Icon: MessageSquare,t: "Content engine",             d: "Multi-channel suite — LinkedIn, blog, SEO articles, email — anchored to the approved messaging pyramid." },
+  { Icon: Download,     t: "Audit-ready exports",        d: "Three PDFs, three Word docs, a strategy deck, and a one-click ZIP kit. Every file built server-side." },
+  { Icon: ShieldCheck,  t: "Human-in-the-loop gates",    d: "Approve, regenerate, or rewrite at every stage. The agents never advance without your sign-off." },
+];
+
+const STATS = [
+  { k: "13", l: "Strategy sections rendered from agent output" },
+  { k: "4 → 1", l: "Direction gate: choose from 4 AI angles or your own brief" },
+  { k: "7", l: "Export formats — PDF×3, DOCX×3, PPTX, plus a ZIP kit" },
 ];
 
 const FAQ = [
   { q: "What does MOVE actually do?", a: "MOVE drives a sequential multi-agent system: research → strategy → content. Every artefact is grounded in cited sources, and each stage waits for your approval before the next one runs." },
-  { q: "Why does it ask me to approve each stage?", a: "The agent system enforces a human-in-the-loop gate after research, strategy and content. MOVE surfaces those gates as Approve / Regenerate buttons — they are real backend transitions, not UI decoration." },
-  { q: "What can I download?", a: "Three PDFs and three Word docs (research only, strategy only, combined research + strategy), a strategy PowerPoint deck, or the entire kit as a single ZIP. Every file is generated server-side by the agent's exporters." },
+  { q: "Why does it ask me to approve each stage?", a: "The agents enforce a human-in-the-loop gate after research, strategy, and content. MOVE surfaces those gates as Approve / Regenerate buttons — they are real backend transitions, not UI decoration." },
+  { q: "How is the strategy grounded?", a: "After you approve the research, MOVE asks you to pick a strategic direction — either one of four AI-suggested angles derived strictly from the research, or your own GTM brief. The strategy agent then composes only what's traceable to that input." },
+  { q: "What can I download?", a: "Three PDFs and three Word documents (research only, strategy only, or both), a strategy PowerPoint, or the full kit as a single ZIP. Every file is generated server-side by the agent's exporters." },
 ];
+
+const easing = [0.16, 1, 0.3, 1];
 
 export default function Landing() {
   return (
-    <div className="relative overflow-hidden bg-move-bg min-h-screen">
+    <div className="relative bg-move-bg min-h-screen overflow-hidden">
+      {/* Subtle grain layer for depth (CSS noise via SVG data URI) */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 opacity-[0.035] mix-blend-multiply z-0"
+        style={{
+          backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27><filter id=%27n%27><feTurbulence type=%27fractalNoise%27 baseFrequency=%270.85%27 numOctaves=%272%27/></filter><rect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/></svg>")',
+        }}
+      />
+
       <TopNav variant="marketing" />
 
-      {/* Hero Section - MOVE Design System */}
-      <section className="relative pt-16 pb-12 px-6 lg:px-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="rounded-[20px] bg-move-surface border border-move-border p-10 lg:p-12">
-            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-8">
-              {/* Left Column - Text Content */}
-              <div className="flex flex-col justify-center">
-                <motion.h1
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.7 }}
-                  className="font-heading text-[50px] leading-[1.0] tracking-[-0.03em] font-medium"
-                  style={{ fontWeight: 500 }}
-                >
-                  <span className="text-move-ink">Outthink the market.</span>
-                  <br />
-                  <span className="text-gradient-move">Outmove the competition.</span>
-                </motion.h1>
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="relative pt-20 pb-28 px-6 lg:px-10">
+        <div className="max-w-[1400px] mx-auto relative">
+          {/* Floating gradient orb behind hero */}
+          <div aria-hidden className="absolute -top-32 right-0 w-[640px] h-[640px] rounded-full opacity-50 blur-3xl"
+               style={{ background: "radial-gradient(circle, var(--color-grad-2-tint), transparent 70%)" }} />
+          <div aria-hidden className="absolute -bottom-40 -left-32 w-[560px] h-[560px] rounded-full opacity-40 blur-3xl"
+               style={{ background: "radial-gradient(circle, var(--color-grad-1-tint), transparent 70%)" }} />
 
-                <motion.p
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.7, delay: 0.1 }}
-                  className="mt-6 text-base leading-[1.6] text-move-body"
-                >
-                  <span className="text-move-ink font-medium">MOVE</span> — an agentic AI platform that automates go-to-market work. Research, strategy, and content, end to end. You stay in control at every step.
-                </motion.p>
+          <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
+            <div className="lg:col-span-8">
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: easing }}>
+                <span className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-move-grad-2/30 bg-move-surface/60 backdrop-blur-sm text-move-grad-2 tracking-wide" style={{ fontWeight: 500 }}>
+                  <Sparkles className="w-3 h-3" /> The GTM operating system for AI-native teams
+                </span>
+              </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.7, delay: 0.2 }}
-                  className="mt-8 flex flex-col sm:flex-row items-start gap-3"
-                >
-                  <Link to="/research">
-                    <Button
-                      data-testid="hero-primary-cta"
-                      className="bg-move-ink hover:bg-move-ink/90 text-white rounded-[12px] px-6 py-3 h-auto text-[14px] font-medium"
-                      style={{ fontWeight: 500 }}
-                    >
-                      Start building GTM strategy
-                    </Button>
-                  </Link>
-                  <Button
-                    data-testid="hero-secondary-cta"
-                    variant="outline"
-                    className="border-move-border-ghost bg-transparent text-move-ink hover:bg-move-bg-subtle rounded-[12px] px-6 py-3 h-auto text-[14px] font-medium"
-                    style={{ fontWeight: 500 }}
-                  >
-                    <PlayCircle className="mr-2 w-4 h-4" /> Watch demo
-                  </Button>
-                </motion.div>
-              </div>
-
-              {/* Right Column - Preview Card */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.15 }}
-                className="relative aspect-[4/5] rounded-[16px] overflow-hidden"
-                style={{ background: 'linear-gradient(140deg, var(--color-grad-1), var(--color-grad-2), var(--color-grad-3))' }}
+              <motion.h1
+                initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.08, ease: easing }}
+                className="mt-6 font-heading tracking-tight text-move-ink leading-[0.95]"
+                style={{ fontWeight: 500, fontSize: "clamp(3rem, 7.4vw, 7rem)" }}
               >
-                {/* Status Pill */}
-                <div className="absolute top-5 left-5 glass-dark rounded-full px-3 py-1.5 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-white text-[10px] uppercase tracking-[0.06em] font-medium" style={{ fontWeight: 500 }}>ANALYZING</span>
-                </div>
+                Outthink the market.<br />
+                <span style={{
+                  backgroundImage: "var(--gradient-headline)",
+                  WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
+                }}>Outmove</span> the competition.
+              </motion.h1>
 
-                {/* Progress Section */}
-                <div className="absolute bottom-24 left-5 right-5">
-                  <div className="text-white/80 text-[9px] uppercase tracking-[0.06em] mb-2 font-medium" style={{ fontWeight: 500 }}>YOUR PROJECT</div>
-                  <div className="h-1.5 bg-white/20 rounded-full overflow-hidden mb-3">
-                    <div className="h-full bg-white rounded-full" style={{ width: '60%' }} />
-                  </div>
-                  <div className="flex items-center gap-1.5 text-white text-[11px]">
-                    <span className="font-medium" style={{ fontWeight: 500 }}>Query</span>
-                    <span className="opacity-60">·</span>
-                    <span className="font-medium" style={{ fontWeight: 500 }}>Research</span>
-                    <span className="opacity-60">·</span>
-                    <span className="opacity-90">Strategy</span>
-                    <span className="opacity-60">·</span>
-                    <span className="opacity-70">Content</span>
-                    <span className="opacity-60">·</span>
-                    <span className="opacity-70">Export</span>
-                  </div>
-                </div>
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.2, ease: easing }}
+                className="mt-7 max-w-2xl text-lg md:text-xl text-move-body leading-relaxed">
+                MOVE is a research-grounded multi-agent system that produces a complete GTM kit — competitive brief, strategy, and content suite — with a human-in-the-loop gate at every stage.
+              </motion.p>
 
-                {/* White Inset Card */}
-                <div className="absolute bottom-5 left-5 right-5 bg-white rounded-[12px] border border-move-border p-4">
-                  <div className="text-[9px] uppercase tracking-[0.06em] mb-1.5 font-medium" style={{ color: 'var(--color-grad-3)', fontWeight: 500 }}>
-                    MARKET RESEARCH · LIVE
-                  </div>
-                  <div className="text-move-ink text-[12px] font-medium leading-tight" style={{ fontWeight: 500 }}>
-                    Anthropic competitive brief and positioning analysis
-                  </div>
-                </div>
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.32, ease: easing }}
+                className="mt-9 flex flex-col sm:flex-row gap-3">
+                <Button asChild size="lg" data-testid="hero-cta-primary" className="bg-move-ink hover:bg-move-ink-hover text-white h-14 px-7 text-base rounded-[14px] shadow-lg shadow-move-ink/15" style={{ fontWeight: 500 }}>
+                  <Link to="/research">Start building GTM strategy <ArrowRight className="ml-2 w-4 h-4" /></Link>
+                </Button>
+                <Button asChild variant="ghost" size="lg" data-testid="hero-cta-secondary" className="text-move-ink hover:bg-move-surface h-14 px-5 text-base rounded-[14px]">
+                  <Link to="/projects">See an example <ArrowUpRight className="ml-2 w-4 h-4" /></Link>
+                </Button>
               </motion.div>
+
+              {/* Tiny trust line */}
+              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-move-muted">
+                <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-move-success" /> No card required</span>
+                <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-move-success" /> First report in &lt;3 minutes</span>
+                <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-move-success" /> Cited sources by default</span>
+              </div>
             </div>
 
-            {/* Stats Row - 5 Stages */}
-            <div className="mt-10 pt-8 border-t border-move-border grid grid-cols-2 md:grid-cols-5 gap-6">
-              <div>
-                <div className="text-[22px] font-medium tracking-[-0.01em] text-move-ink mb-1" style={{ fontWeight: 500 }}>Query</div>
-                <div className="text-[12px] text-move-muted leading-relaxed">Submit research question</div>
+            {/* Hero side artwork — animated logo monolith */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.25, ease: easing }}
+              className="lg:col-span-4 relative hidden lg:block"
+            >
+              <div className="relative aspect-[4/5] rounded-[28px] border border-move-border bg-move-surface/70 backdrop-blur-sm overflow-hidden shadow-xl">
+                <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(165deg, var(--color-grad-1-tint), transparent 50%, var(--color-grad-3-tint))" }} />
+                <div className="relative h-full flex flex-col justify-between p-8">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] uppercase tracking-[0.2em] text-move-muted" style={{ fontWeight: 500 }}>Live agent</span>
+                    <span className="flex items-center gap-1.5 text-[11px] text-move-success"><span className="w-1.5 h-1.5 rounded-full bg-move-success animate-pulse" /> online</span>
+                  </div>
+                  <motion.img
+                    src={LOGO} alt="" aria-hidden="true"
+                    initial={{ scale: 0.92, rotate: -3 }} animate={{ scale: 1, rotate: 0 }} transition={{ duration: 1.2, ease: easing, delay: 0.4 }}
+                    className="w-44 self-center"
+                  />
+                  <div className="text-[11px] text-move-muted leading-relaxed">
+                    Research → Strategy → Content → Export.<br />
+                    Every artefact cited. Every gate approved by a human.
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="text-[22px] font-medium tracking-[-0.01em] text-move-ink mb-1" style={{ fontWeight: 500 }}>Research</div>
-                <div className="text-[12px] text-move-muted leading-relaxed">Market trends, competitors</div>
-              </div>
-              <div>
-                <div className="text-[22px] font-medium tracking-[-0.01em] text-move-ink mb-1" style={{ fontWeight: 500 }}>Strategy</div>
-                <div className="text-[12px] text-move-muted leading-relaxed">Positioning, execution plan</div>
-              </div>
-              <div>
-                <div className="text-[22px] font-medium tracking-[-0.01em] text-move-ink mb-1" style={{ fontWeight: 500 }}>Content</div>
-                <div className="text-[12px] text-move-muted leading-relaxed">Ready-to-launch content</div>
-              </div>
-              <div>
-                <div className="text-[22px] font-medium tracking-[-0.01em] text-move-ink mb-1" style={{ fontWeight: 500 }}>Export</div>
-                <div className="text-[12px] text-move-muted leading-relaxed">PDF, Word, PowerPoint</div>
-              </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      <section className="relative px-6 lg:px-10 py-24 border-t border-move-border bg-move-bg">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-move-grad-3 mb-3 font-medium" style={{ fontWeight: 500 }}>The Platform</div>
-            <h2 className="font-heading text-4xl sm:text-5xl font-medium tracking-tight text-move-ink" style={{ fontWeight: 500 }}>Six capabilities. One agent stack.</h2>
-            <p className="mt-4 text-move-body max-w-2xl mx-auto">Every capability below is a real agent function — research, strategy, content, and document export.</p>
+      {/* ── Marquee chips ────────────────────────────────────────────────── */}
+      <section className="relative py-6 border-y border-move-border bg-move-surface/50 backdrop-blur-sm">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 flex items-center gap-3 flex-wrap text-sm text-move-muted">
+          <span className="text-[11px] uppercase tracking-[0.2em] text-move-ink mr-2" style={{ fontWeight: 500 }}>Built for</span>
+          {MARQUEE.map((c) => (
+            <span key={c} className="inline-flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-move-grad-2" />{c}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Pillars ──────────────────────────────────────────────────────── */}
+      <section className="relative py-32 px-6 lg:px-10">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-20">
+            <div className="lg:col-span-5">
+              <h2 className="font-heading tracking-tight text-move-ink leading-[1.02]"
+                  style={{ fontWeight: 500, fontSize: "clamp(2.5rem, 4.4vw, 4rem)" }}>
+                Built like an analyst.<br />Shipped like a product.
+              </h2>
+            </div>
+            <div className="lg:col-span-7 lg:pl-10 lg:border-l lg:border-move-border">
+              <p className="text-lg text-move-body leading-relaxed">
+                Other tools generate plausible prose. MOVE produces auditable artefacts: research with citations, strategy traceable to direction, content tied to messaging. Reviewers can defend every line.
+              </p>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURES.map((f, i) => (
-              <motion.div key={f.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.04 }} className="group rounded-[16px] border border-move-border bg-move-surface p-6 hover:border-move-grad-3/50 hover:bg-move-surface-hover transition-all">
-                <div className="w-10 h-10 rounded-lg bg-move-grad-3-tint border border-move-grad-3/30 flex items-center justify-center mb-4 transition-colors">
-                  <f.icon className="w-5 h-5 text-move-grad-3" />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {PILLARS.map((p, i) => (
+              <motion.article
+                key={p.eyebrow}
+                initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.6, delay: i * 0.08, ease: easing }}
+                className="group relative rounded-[22px] border border-move-border bg-move-surface p-7 md:p-8 overflow-hidden hover:border-move-grad-2/60 transition-colors"
+              >
+                <div aria-hidden className="absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl opacity-0 group-hover:opacity-60 transition-opacity duration-500"
+                     style={{ background: "var(--color-grad-2-tint)" }} />
+                <div className="relative">
+                  <span className="text-xs tracking-[0.25em] text-move-grad-3 font-medium" style={{ fontWeight: 500 }}>{p.eyebrow}</span>
+                  <div className="mt-5 mb-5 w-12 h-12 rounded-2xl bg-gradient-to-br from-move-grad-1-tint to-move-grad-3-tint flex items-center justify-center">
+                    <p.Icon className="w-5 h-5 text-move-grad-2" />
+                  </div>
+                  <h3 className="text-2xl text-move-ink leading-tight mb-3" style={{ fontWeight: 500 }}>{p.title}</h3>
+                  <p className="text-move-body leading-relaxed">{p.body}</p>
                 </div>
-                <h3 className="font-heading font-medium text-lg text-move-ink mb-2" style={{ fontWeight: 500 }}>{f.title}</h3>
-                <p className="text-sm text-move-body leading-relaxed">{f.desc}</p>
-              </motion.div>
+              </motion.article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="relative px-6 lg:px-10 py-24 border-t border-move-border bg-move-bg-subtle">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-move-grad-2 mb-3 font-medium" style={{ fontWeight: 500 }}>How it works</div>
-            <h2 className="font-heading text-4xl sm:text-5xl font-medium tracking-tight text-move-ink" style={{ fontWeight: 500 }}>From a question to a deliverable</h2>
+      {/* ── Workflow ribbon ──────────────────────────────────────────────── */}
+      <section className="relative py-32 px-6 lg:px-10 bg-gradient-to-br from-move-grad-1-tint/40 via-transparent to-move-grad-3-tint/40">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="flex items-end justify-between flex-wrap gap-6 mb-14">
+            <div>
+              <span className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-move-grad-3/40 bg-move-surface/80 text-move-grad-3 tracking-wide" style={{ fontWeight: 500 }}>
+                <GitBranch className="w-3 h-3" /> The workflow
+              </span>
+              <h2 className="mt-4 font-heading tracking-tight text-move-ink"
+                  style={{ fontWeight: 500, fontSize: "clamp(2.25rem, 4vw, 3.5rem)" }}>
+                Five steps. Zero shortcuts.
+              </h2>
+            </div>
+            <p className="max-w-md text-move-body leading-relaxed">
+              The agents run the heavy lifting. You stay in control at every gate. Approve, regenerate, or rewrite — the pipeline only advances when you say so.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {STEPS.map((s) => (
-              <div key={s.n} className="rounded-[16px] border border-move-border bg-move-surface p-6 relative overflow-hidden">
-                <div className="font-mono text-xs text-move-grad-3 mb-3">{s.n}</div>
-                <h3 className="font-heading font-medium text-base text-move-ink mb-1.5" style={{ fontWeight: 500 }}>{s.t}</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {STEPS.map((s, i) => (
+              <motion.div
+                key={s.n}
+                initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.06, ease: easing }}
+                className="relative rounded-[18px] border border-move-border bg-move-surface p-6"
+              >
+                <div className="text-[11px] tracking-[0.25em] text-move-grad-2 mb-4" style={{ fontWeight: 500 }}>{s.n}</div>
+                <div className="text-xl text-move-ink mb-2" style={{ fontWeight: 500 }}>{s.t}</div>
                 <p className="text-sm text-move-body leading-relaxed">{s.d}</p>
-              </div>
+                {i < STEPS.length - 1 && (
+                  <ArrowRight aria-hidden className="hidden lg:block absolute top-1/2 -right-3 w-5 h-5 text-move-grad-2/60 -translate-y-1/2" />
+                )}
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="px-6 lg:px-10 py-24 border-t border-move-border bg-move-bg">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-move-grad-2 mb-3 font-medium" style={{ fontWeight: 500 }}>FAQ</div>
-            <h2 className="font-heading text-4xl sm:text-5xl font-medium tracking-tight text-move-ink" style={{ fontWeight: 500 }}>Frequently asked</h2>
+      {/* ── Capability matrix ────────────────────────────────────────────── */}
+      <section className="relative py-32 px-6 lg:px-10">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-16">
+            <div className="lg:col-span-5">
+              <span className="text-[11px] uppercase tracking-[0.25em] text-move-grad-3" style={{ fontWeight: 500 }}>Inside MOVE</span>
+              <h2 className="mt-4 font-heading tracking-tight text-move-ink"
+                  style={{ fontWeight: 500, fontSize: "clamp(2.25rem, 4vw, 3.5rem)" }}>
+                Every capability,<br />engineered to defend itself.
+              </h2>
+            </div>
+            <div className="lg:col-span-7 lg:pl-10 lg:border-l lg:border-move-border flex items-end">
+              <p className="text-lg text-move-body leading-relaxed">
+                Six independent systems, one pipeline. Each step is opinionated, observable, and reproducible — so the artefacts you ship today still hold up when a reviewer questions them next quarter.
+              </p>
+            </div>
           </div>
-          <Accordion type="single" collapsible className="space-y-2" data-testid="faq-accordion">
-            {FAQ.map((f) => (
-              <AccordionItem key={f.q} value={f.q} className="border border-move-border bg-move-surface rounded-lg px-5 data-[state=open]:border-move-grad-3/50">
-                <AccordionTrigger data-testid={`faq-item-${f.q.slice(0, 18)}`} className="text-left font-heading font-medium text-base text-move-ink hover:no-underline" style={{ fontWeight: 500 }}>{f.q}</AccordionTrigger>
-                <AccordionContent className="text-move-body leading-relaxed">{f.a}</AccordionContent>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-move-border rounded-[24px] overflow-hidden border border-move-border">
+            {CAPABILITIES.map((c, i) => (
+              <motion.div
+                key={c.t}
+                initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.05, ease: easing }}
+                className="bg-move-surface p-8 hover:bg-move-bg-subtle transition-colors"
+              >
+                <div className="w-10 h-10 rounded-xl border border-move-border bg-move-bg-subtle flex items-center justify-center mb-5">
+                  <c.Icon className="w-4 h-4 text-move-ink" />
+                </div>
+                <h3 className="text-lg text-move-ink mb-2" style={{ fontWeight: 500 }}>{c.t}</h3>
+                <p className="text-sm text-move-body leading-relaxed">{c.d}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Editorial quote ──────────────────────────────────────────────── */}
+      <section className="relative py-28 px-6 lg:px-10 bg-move-ink text-white overflow-hidden">
+        <div aria-hidden className="absolute inset-0 opacity-50"
+             style={{ background: "radial-gradient(ellipse at 80% 20%, rgba(212, 149, 107, 0.18), transparent 50%), radial-gradient(ellipse at 20% 80%, rgba(126, 111, 180, 0.20), transparent 55%)" }} />
+        <div className="max-w-[1100px] mx-auto relative">
+          <Quote aria-hidden className="w-10 h-10 text-white/30 mb-8" />
+          <blockquote className="font-heading leading-[1.15] tracking-tight"
+                      style={{ fontWeight: 500, fontSize: "clamp(2rem, 3.6vw, 3.5rem)" }}>
+            We used to spend two weeks turning research into a deck. MOVE turned it into a Friday afternoon — and the citations made the strategy survive contact with our board.
+          </blockquote>
+          <div className="mt-10 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-move-grad-1 via-move-grad-2 to-move-grad-3 flex items-center justify-center text-white" style={{ fontWeight: 500 }}>AK</div>
+            <div>
+              <div className="text-white" style={{ fontWeight: 500 }}>Alex Kim</div>
+              <div className="text-sm text-white/60">Head of GTM, AI Platform Co.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Stats strip ──────────────────────────────────────────────────── */}
+      <section className="relative py-24 px-6 lg:px-10">
+        <div className="max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-px bg-move-border rounded-[24px] overflow-hidden border border-move-border">
+          {STATS.map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+                        transition={{ duration: 0.6, delay: i * 0.1, ease: easing }}
+                        className="bg-move-surface p-10">
+              <div className="font-heading text-move-ink leading-none mb-3"
+                   style={{ fontWeight: 500, fontSize: "clamp(3rem, 4vw, 4rem)",
+                            backgroundImage: "var(--gradient-headline)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
+                {s.k}
+              </div>
+              <div className="text-move-body leading-relaxed">{s.l}</div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
+      <section className="relative py-28 px-6 lg:px-10">
+        <div className="max-w-[1100px] mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-[11px] uppercase tracking-[0.25em] text-move-grad-3" style={{ fontWeight: 500 }}>FAQ</span>
+            <h2 className="mt-4 font-heading tracking-tight text-move-ink"
+                style={{ fontWeight: 500, fontSize: "clamp(2.25rem, 4vw, 3.5rem)" }}>
+              Questions, answered honestly.
+            </h2>
+          </div>
+          <Accordion type="single" collapsible className="space-y-3">
+            {FAQ.map((f, i) => (
+              <AccordionItem key={i} value={`q-${i}`} className="rounded-[16px] border border-move-border bg-move-surface overflow-hidden">
+                <AccordionTrigger className="px-6 py-5 text-left text-move-ink hover:no-underline" style={{ fontWeight: 500 }}>
+                  <span className="text-base md:text-lg">{f.q}</span>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-5 text-move-body leading-relaxed">
+                  {f.a}
+                </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
         </div>
       </section>
 
-      <section className="px-6 lg:px-10 py-24 border-t border-move-border bg-move-bg-subtle relative overflow-hidden">
-        <div className="relative max-w-3xl mx-auto text-center">
-          <Brain className="w-10 h-10 mx-auto mb-4 text-move-ink" />
-          <h2 className="font-heading text-4xl sm:text-5xl font-medium tracking-tight text-move-ink" style={{ fontWeight: 500 }}>Stop planning. Start moving.</h2>
-          <p className="mt-4 text-move-body text-lg">Run a real multi-agent GTM pipeline end-to-end.</p>
-          <Link to="/research">
-            <Button data-testid="final-cta" className="mt-8 bg-move-ink hover:bg-move-ink-hover text-white px-6 py-3 text-[14px] rounded-[12px] h-auto font-medium" style={{ fontWeight: 500 }}>
-              Start building GTM strategy <ArrowRight className="ml-2 w-4 h-4" />
-            </Button>
-          </Link>
+      {/* ── Final CTA ────────────────────────────────────────────────────── */}
+      <section className="relative py-28 px-6 lg:px-10">
+        <div className="max-w-[1400px] mx-auto relative rounded-[32px] overflow-hidden border border-move-border bg-move-ink text-white">
+          <div aria-hidden className="absolute inset-0 opacity-70"
+               style={{ background: "radial-gradient(circle at 80% 50%, rgba(212, 149, 107, 0.35), transparent 55%), radial-gradient(circle at 20% 100%, rgba(126, 111, 180, 0.35), transparent 55%)" }} />
+          <div className="relative px-8 md:px-16 py-20 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-10 items-end">
+            <div>
+              <h2 className="font-heading tracking-tight leading-[1.02] text-white"
+                  style={{ fontWeight: 500, fontSize: "clamp(2.5rem, 4.8vw, 4.5rem)" }}>
+                Stop drafting decks.<br />Start shipping moves.
+              </h2>
+              <p className="mt-6 text-lg text-white/70 max-w-xl leading-relaxed">
+                Your next GTM run is one company name away. We&apos;ll handle the research, strategy, and content — you stay in control at every gate.
+              </p>
+            </div>
+            <div className="flex flex-col md:items-end gap-3">
+              <Button asChild size="lg" data-testid="footer-cta-primary" className="bg-white text-move-ink hover:bg-white/90 h-14 px-7 text-base rounded-[14px]" style={{ fontWeight: 500 }}>
+                <Link to="/research">Start your first run <ArrowRight className="ml-2 w-4 h-4" /></Link>
+              </Button>
+              <Button asChild variant="ghost" size="lg" className="text-white/80 hover:text-white hover:bg-white/10 h-14 px-5 rounded-[14px]">
+                <Link to="/projects"><BookOpen className="mr-2 w-4 h-4" /> Browse example runs</Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 
-      <footer className="border-t border-move-border px-6 lg:px-10 py-10 bg-move-bg">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-move-muted">
-          <div className="flex items-center gap-3">
-            <span className="text-move-ink font-medium" style={{ fontWeight: 500 }}>MOVE</span>
-            <span>Marketing Opportunity Value Executor · © 2026</span>
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      <footer className="border-t border-move-border py-10 px-6 lg:px-10">
+        <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-move-muted">
+          <div className="flex items-center gap-2">
+            <img src={LOGO} alt="" aria-hidden="true" className="w-6 h-6" />
+            <span className="text-move-ink" style={{ fontWeight: 500 }}>MOVE</span>
+            <span>· The GTM operating system.</span>
           </div>
           <div className="flex items-center gap-5">
-            <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-move-ink transition-colors">Privacy</a>
-            <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-move-ink transition-colors">Terms</a>
-            <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-move-ink transition-colors">Contact</a>
+            <Link to="/projects" className="hover:text-move-ink transition-colors">Projects</Link>
+            <Link to="/research" className="hover:text-move-ink transition-colors">Research</Link>
+            <Link to="/ideation" className="hover:text-move-ink transition-colors">Strategy</Link>
+            <Link to="/export" className="hover:text-move-ink transition-colors">Export</Link>
           </div>
         </div>
       </footer>
