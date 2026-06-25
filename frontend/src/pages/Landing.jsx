@@ -124,7 +124,7 @@ export default function Landing() {
 
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.32, ease: easing }}
                 className="mt-9 flex flex-col sm:flex-row gap-3">
-                <Button asChild size="lg" data-testid="hero-cta-primary" className="bg-move-ink hover:bg-move-ink-hover text-white h-14 px-7 text-base rounded-[14px] shadow-lg shadow-move-ink/15" style={{ fontWeight: 500 }}>
+                <Button asChild size="lg" data-testid="hero-cta-primary" className="bg-move-ink hover:bg-move-ink-hover text-white dark:text-move-bg h-14 px-7 text-base rounded-[14px] shadow-lg shadow-move-ink/15" style={{ fontWeight: 500 }}>
                   <Link to="/research">Start building GTM strategy <ArrowRight className="ml-2 w-4 h-4" /></Link>
                 </Button>
                 <Button asChild variant="ghost" size="lg" data-testid="hero-cta-secondary" className="text-move-ink hover:bg-move-surface h-14 px-5 text-base rounded-[14px]">

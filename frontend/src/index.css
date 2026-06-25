@@ -185,6 +185,20 @@ html, body {
         border: 1px solid rgba(26, 29, 46, 0.9);
     }
     
+    /* ── Dark-mode ink flip ──────────────────────────────────────────────
+       `bg-move-ink` flips from near-black (light) to near-white (dark).
+       Any white text on top would become invisible in dark mode, so we
+       auto-flip the foreground to the page bg color. */
+    .dark .bg-move-ink,
+    .dark .bg-move-ink\/90,
+    .dark .hover\:bg-move-ink-hover:hover {
+        color: var(--color-bg);
+    }
+    .dark .bg-move-ink .text-white,
+    .dark .bg-move-ink\/90 .text-white {
+        color: var(--color-bg);
+    }
+
     /* ── Aurora gradient shadow ──────────────────────────────────────────
        A premium, full-bleed gradient backdrop that lives BEHIND the content
        and gives the page a soft, atmospheric glow. Uses brand grad-1/2/3
