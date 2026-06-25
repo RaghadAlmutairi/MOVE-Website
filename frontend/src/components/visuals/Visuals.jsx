@@ -54,7 +54,7 @@ export function ExecutiveSummary({ kind = "research", insights = [], opportuniti
             </div>
             <ul className="space-y-1.5">
               {c.items.slice(0, 4).map((it, i) => (
-                <li key={i} className="text-sm text-move-body leading-relaxed flex gap-2">
+                <li key={`${toText(it)}-${i}`} className="text-sm text-move-body leading-relaxed flex gap-2">
                   <span className="text-move-grad-2 shrink-0">•</span>
                   <span>{toText(it)}</span>
                 </li>
@@ -101,7 +101,7 @@ export function ICPCards({ personas = [] }) {
       {list.map((p, i) => {
         const o = safeObj(p);
         return (
-          <article key={i} className="rounded-[16px] border border-move-border bg-move-surface p-5 hover:border-move-grad-2 transition-colors" data-testid={`icp-card-${i}`}>
+          <article key={o.name || o.role || `persona-${i}`} className="rounded-[16px] border border-move-border bg-move-surface p-5 hover:border-move-grad-2 transition-colors" data-testid={`icp-card-${i}`}>
             <div className="flex items-start gap-3 mb-3">
               <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-move-grad-1-tint to-move-grad-3-tint flex items-center justify-center shrink-0">
                 <Users className="w-4 h-4 text-move-grad-2" />
@@ -141,7 +141,7 @@ function PillRow({ label, items, accent = "grad" }) {
       <div className="text-[11px] uppercase tracking-wider text-move-muted mb-1">{label}</div>
       <div className="flex flex-wrap gap-1.5">
         {items.map((s, i) => (
-          <span key={i} className={`text-xs px-2 py-0.5 rounded-full border ${cls}`}>{toText(s)}</span>
+          <span key={`${toText(s)}-${i}`} className={`text-xs px-2 py-0.5 rounded-full border ${cls}`}>{toText(s)}</span>
         ))}
       </div>
     </div>
@@ -166,7 +166,7 @@ export function CompetitorMatrix({ competitors = [] }) {
           {list.map((c, i) => {
             const o = safeObj(c);
             return (
-              <tr key={i} className="border-b border-move-border last:border-0 hover:bg-move-bg-subtle/40" data-testid={`competitor-row-${i}`}>
+              <tr key={o.name || `competitor-${i}`} className="border-b border-move-border last:border-0 hover:bg-move-bg-subtle/40" data-testid={`competitor-row-${i}`}>
                 <td className="px-4 py-3 align-top">
                   <div className="font-medium text-move-ink" style={{ fontWeight: 500 }}>{o.name || `Competitor ${i + 1}`}</div>
                   {o.url && <div className="text-xs text-move-muted truncate max-w-[200px]">{o.url}</div>}
@@ -196,7 +196,7 @@ function BulletList({ items, accent }) {
   return (
     <ul className="space-y-1">
       {list.map((s, i) => (
-        <li key={i} className="text-move-body flex gap-1.5">
+        <li key={`${toText(s)}-${i}`} className="text-move-body flex gap-1.5">
           <span className={`shrink-0 ${dot}`}>•</span>
           <span className="leading-snug">{toText(s)}</span>
         </li>
@@ -316,7 +316,7 @@ export function MessagingPyramid({ messaging }) {
           {pillars.map((p, i) => {
             const obj = typeof p === "string" ? { label: p } : safeObj(p);
             return (
-              <div key={i} className="rounded-[12px] border border-move-border bg-move-bg-subtle p-4">
+              <div key={obj.label || obj.title || obj.name || `pillar-${i}`} className="rounded-[12px] border border-move-border bg-move-bg-subtle p-4">
                 <div className="text-[11px] uppercase tracking-wider text-move-grad-2 font-medium mb-1" style={{ fontWeight: 500 }}>Pillar {i + 1}</div>
                 <div className="text-sm font-medium text-move-ink" style={{ fontWeight: 500 }}>{toText(obj.label || obj.title || obj.name)}</div>
                 {obj.description && <div className="text-sm text-move-body mt-1 leading-relaxed">{toText(obj.description)}</div>}
@@ -330,7 +330,7 @@ export function MessagingPyramid({ messaging }) {
           <div className="text-[11px] uppercase tracking-wider text-move-muted mb-2">Proof points</div>
           <div className="flex flex-wrap gap-1.5">
             {proofs.slice(0, 8).map((p, i) => (
-              <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-move-bg-subtle border border-move-border text-move-body">{toText(p)}</span>
+              <span key={`${toText(p)}-${i}`} className="text-xs px-2.5 py-1 rounded-full bg-move-bg-subtle border border-move-border text-move-body">{toText(p)}</span>
             ))}
           </div>
         </div>
@@ -347,7 +347,7 @@ export function StrategicPriorities({ priorities = [] }) {
       {list.map((p, i) => {
         const o = typeof p === "string" ? { label: p } : safeObj(p);
         return (
-          <li key={i} className="rounded-[16px] border border-move-border bg-move-surface p-4 flex gap-4" data-testid={`priority-${i}`}>
+          <li key={o.label || o.title || o.name || `priority-${i}`} className="rounded-[16px] border border-move-border bg-move-surface p-4 flex gap-4" data-testid={`priority-${i}`}>
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-move-grad-1 via-move-grad-2 to-move-grad-3 text-white flex items-center justify-center shrink-0 font-medium" style={{ fontWeight: 500 }}>
               {String(i + 1).padStart(2, "0")}
             </div>
@@ -357,7 +357,7 @@ export function StrategicPriorities({ priorities = [] }) {
               {Array.isArray(o.kpis) && o.kpis.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {o.kpis.slice(0, 4).map((k, j) => (
-                    <span key={j} className="text-[11px] px-2 py-0.5 rounded-full bg-move-grad-2-tint text-move-grad-2 border border-move-grad-2/30">{toText(k)}</span>
+                    <span key={`${toText(k)}-${j}`} className="text-[11px] px-2 py-0.5 rounded-full bg-move-grad-2-tint text-move-grad-2 border border-move-grad-2/30">{toText(k)}</span>
                   ))}
                 </div>
               )}

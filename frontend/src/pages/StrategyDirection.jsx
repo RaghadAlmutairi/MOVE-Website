@@ -140,7 +140,7 @@ export default function StrategyDirection() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8" data-testid="direction-cards">
             {directions.map((d, i) => (
               <DirectionCard
-                key={i}
+                key={d.title || `direction-${i}`}
                 index={i}
                 direction={d}
                 selected={selected === i}
@@ -240,7 +240,7 @@ function DirectionCard({ direction, selected, onClick, index }) {
           <div className="text-[10px] uppercase tracking-wider text-move-muted mb-1.5 font-medium" style={{ fontWeight: 500 }}>Grounded in research</div>
           <ul className="space-y-1">
             {direction.evidence.slice(0, 3).map((e, j) => (
-              <li key={j} className="text-xs text-move-body leading-relaxed flex gap-1.5">
+              <li key={`${e}-${j}`} className="text-xs text-move-body leading-relaxed flex gap-1.5">
                 <span className="text-move-grad-2 shrink-0">•</span><span>{e}</span>
               </li>
             ))}

@@ -15,7 +15,7 @@ export function KV({ label, value }) {
     <div className="rounded-[10px] border border-dashed border-move-border bg-move-bg-subtle/60 p-3">
       <div className="text-[10px] uppercase tracking-wider text-move-grad-2 font-medium" style={{ fontWeight: 500 }}>{label}</div>
       {Array.isArray(value)
-        ? <ul className="mt-1 space-y-1 text-sm text-move-ink leading-relaxed">{value.map((x, i) => <li key={i} className="flex gap-1.5"><span className="text-move-grad-2 shrink-0">•</span><span>{s(x)}</span></li>)}</ul>
+        ? <ul className="mt-1 space-y-1 text-sm text-move-ink leading-relaxed">{value.map((x, i) => <li key={`${s(x)}-${i}`} className="flex gap-1.5"><span className="text-move-grad-2 shrink-0">•</span><span>{s(x)}</span></li>)}</ul>
         : <p className="text-sm text-move-ink mt-0.5 leading-relaxed">{s(value)}</p>}
     </div>
   );
@@ -33,7 +33,7 @@ export function Table({ columns, rows, getCell, testId }) {
           <thead><tr className="border-b border-move-border bg-move-bg-subtle">{columns.map((c) => <Th key={c}>{c}</Th>)}</tr></thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} className="border-b border-move-border last:border-0">
+              <tr key={row?.id || row?.name || `row-${i}`} className="border-b border-move-border last:border-0">
                 {columns.map((c) => <Td key={c}>{getCell(row, c, i)}</Td>)}
               </tr>
             ))}
@@ -192,7 +192,7 @@ export function MessagingByPersonaList({ list }) {
       {items.map((p, i) => {
         const o = obj(p);
         return (
-          <div key={i} className="rounded-[12px] border border-move-border bg-move-surface p-5" data-testid={`messaging-${i}`}>
+          <div key={o.persona || o.name || `messaging-${i}`} className="rounded-[12px] border border-move-border bg-move-surface p-5" data-testid={`messaging-${i}`}>
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-4 h-4 text-move-grad-2" />
               <div className="text-base font-medium text-move-ink" style={{ fontWeight: 500 }}>{o.persona || o.name || `Persona ${i + 1}`}</div>

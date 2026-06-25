@@ -40,10 +40,12 @@ export default function CopilotPanel() {
   const isLanding = location.pathname === "/";
 
   const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem(COLLAPSE_KEY) === "1"; } catch { return false; }
+    try { return localStorage.getItem(COLLAPSE_KEY) === "1"; }
+    catch (e) { console.warn("Copilot: localStorage unavailable for collapsed state", e); return false; }
   });
   useEffect(() => {
-    try { localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0"); } catch { /* noop */ }
+    try { localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0"); }
+    catch (e) { console.warn("Copilot: failed to persist collapsed state", e); }
   }, [collapsed]);
 
   if (isLanding) return null;

@@ -168,8 +168,8 @@ export default function Landing() {
                     { t: "Strategy", s: "running",  desc: "Composing positioning + 90-day plan…" },
                     { t: "Content",  s: "queued",   desc: "LinkedIn · blog · SEO · email" },
                     { t: "Export",   s: "queued",   desc: "PDF · DOCX · PPTX · ZIP" },
-                  ].map((row, i) => (
-                    <li key={i} className="flex items-center gap-3">
+                  ].map((row) => (
+                    <li key={row.t} className="flex items-center gap-3">
                       <span className={`w-7 h-7 rounded-md border flex items-center justify-center shrink-0 ${
                         row.s === "approved"
                           ? "border-move-success/40 bg-move-success-bg text-move-success"
@@ -177,7 +177,7 @@ export default function Landing() {
                           ? "border-move-grad-2/40 bg-move-grad-2-tint text-move-grad-2"
                           : "border-move-border bg-move-bg-subtle text-move-muted"
                       }`}>
-                        <span className="text-[10px]" style={{ fontWeight: 500 }}>{i + 1}</span>
+                        <span className="text-[10px]" style={{ fontWeight: 500 }}>{["Research","Direction","Strategy","Content","Export"].indexOf(row.t) + 1}</span>
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-3">
@@ -366,7 +366,7 @@ export default function Landing() {
       <section className="relative py-24 px-6 lg:px-10">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-px bg-move-border rounded-[24px] overflow-hidden border border-move-border">
           {STATS.map((s, i) => (
-            <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+            <motion.div key={s.k} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
                         transition={{ duration: 0.6, delay: i * 0.1, ease: easing }}
                         className="bg-move-surface p-10">
               <div className="font-heading text-move-ink leading-none mb-3"
@@ -391,8 +391,8 @@ export default function Landing() {
             </h2>
           </div>
           <Accordion type="single" collapsible className="space-y-3">
-            {FAQ.map((f, i) => (
-              <AccordionItem key={i} value={`q-${i}`} className="rounded-[16px] border border-move-border bg-move-surface overflow-hidden">
+            {FAQ.map((f) => (
+              <AccordionItem key={f.q} value={`q-${f.q}`} className="rounded-[16px] border border-move-border bg-move-surface overflow-hidden">
                 <AccordionTrigger className="px-6 py-5 text-left text-move-ink hover:no-underline" style={{ fontWeight: 500 }}>
                   <span className="text-base md:text-lg">{f.q}</span>
                 </AccordionTrigger>
