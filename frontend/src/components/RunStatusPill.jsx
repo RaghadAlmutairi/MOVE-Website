@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { History, ChevronDown, Loader2, CheckCircle2, AlertTriangle, Sparkles, Clock } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -26,6 +26,7 @@ function dotClassFor(status) {
 }
 
 export default function RunStatusPill() {
+  const navigate = useNavigate();
   const { run, runId, history, setRunId } = useRun();
   const active = run || (runId && history.find((h) => h.id === runId)) || null;
   const status = active?.status || "idle";
@@ -77,8 +78,12 @@ export default function RunStatusPill() {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator className="bg-ink-border" />
-        <DropdownMenuItem asChild className="cursor-pointer focus:bg-ink-elevated">
-          <Link to="/research" className="text-brand-secondary">+ Start new run</Link>
+        <DropdownMenuItem
+          data-testid="start-new-run"
+          onClick={() => { setRunId(null); navigate("/research"); }}
+          className="cursor-pointer focus:bg-ink-elevated text-brand-secondary"
+        >
+          + Start new run
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
